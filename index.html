@@ -1,0 +1,334 @@
+<!--
+  브리핑박스 - index.html 한 파일 버전
+  - 빌드 도구 없음, 프레임워크 없음
+  - 스타일: Pico.css (CDN)
+  - 데이터: /api/news.js 서버 함수를 통해 네이버 뉴스 검색 API 결과를 받아옴
+    (서버 함수 없이 미리보기만 열었을 때는 자동으로 더미데이터로 대체됨)
+  - 화면 3개: ① 홈(카테고리 선택) ② 목록(카테고리별 기사) ③ 상세(기사 하나 자세히)
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>브리핑박스</title>
+
+<!-- Pico.css: 클래스 거의 안 써도 기본적으로 깔끔하게 보이게 해주는 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+<style>
+  /* ===== Pico.css 기본값 위에 우리 서비스만의 포인트를 살짝 얹는 부분 ===== */
+  :root{
+    --c-ai: #3D6B99;
+    --c-econ: #8B5E34;
+    --c-money: #3F7D5C;
+  }
+  body{ max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+  header.site-header{ padding: 20px 0 4px; display:flex; align-items:center; gap:8px; }
+  .logo-mark{
+    width:28px; height:28px; border-radius:6px; background:#1C2333;
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:14px;
+  }
+
+  /* 화면 전환용: 3개 화면 중 active만 보이고 나머지는 숨김 */
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* 홈 화면 - 카테고리 버튼을 크게 강조 (서비스 핵심이라서) */
+  .hero h1{ font-size: 26px; line-height:1.4; margin-bottom:8px; }
+  .hero p{ color: var(--pico-muted-color); margin-bottom: 20px; }
+  .cat-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .cat-btn{
+    padding: 18px 8px; font-weight:700; font-size:15px;
+    border-radius: 12px; text-align:center; cursor:pointer;
+  }
+  .cat-btn[data-cat="ai"]{ border-color: var(--c-ai); color: var(--c-ai); }
+  .cat-btn[data-cat="econ"]{ border-color: var(--c-econ); color: var(--c-econ); }
+  .cat-btn[data-cat="money"]{ border-color: var(--c-money); color: var(--c-money); }
+
+  /* 모바일에서는 카테고리 버튼 세로로 쌓기 */
+  @media (max-width: 480px){
+    .cat-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* 목록 화면 카드 */
+  .article-card{
+    border: 1px solid var(--pico-muted-border-color);
+    border-left: 5px solid #1C2333;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .article-card.ai{ border-left-color: var(--c-ai); }
+  .article-card.econ{ border-left-color: var(--c-econ); }
+  .article-card.money{ border-left-color: var(--c-money); }
+  .article-card h4{ margin: 0 0 6px; font-size: 15px; }
+  .article-card p{ margin: 0 0 8px; font-size: 13px; color: var(--pico-muted-color); }
+  .article-date{ font-size: 11px; color: var(--pico-muted-color); }
+
+  .back-btn{ margin-bottom: 14px; }
+
+  /* 목록 상단: 제목 + 새로고침 버튼을 한 줄에 배치 */
+  .list-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 4px;
+  }
+  .list-header h2{ margin:0; }
+  .refresh-btn{
+    padding: 6px 14px; font-size: 13px; white-space: nowrap;
+  }
+  .list-updated{
+    font-size: 12px; color: var(--pico-muted-color); margin: 0 0 16px;
+  }
+
+  /* 카드 하단: 원문보기 링크 + 즐겨찾기 별 버튼을 나란히 배치 */
+  .card-actions{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top: 8px;
+  }
+  .card-actions a{ font-size: 12px; }
+  .fav-btn{
+    background:none; border:none; cursor:pointer;
+    font-size: 18px; line-height:1; padding: 0 4px;
+  }
+  .fav-btn.active{ color:#E8A33D; } /* 즐겨찾기 켜지면 별이 노란색으로 */
+  .fav-btn:not(.active){ color: var(--pico-muted-border-color); }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo-mark">B</div>
+    <strong>브리핑박스</strong>
+  </header>
+
+  <!-- ========== 화면 1: 홈 (카테고리 선택) ========== -->
+  <section id="screen-home" class="screen active">
+    <div class="hero">
+      <h1>바빠서 못 챙긴 뉴스,<br>카테고리 하나로 정리해서 보여드려요</h1>
+      <p>관심 카테고리를 고르면, 오늘 볼 만한 기사만 한 줄 요약과 함께 모아드려요.</p>
+    </div>
+    <div class="cat-grid">
+      <button class="cat-btn outline" data-cat="ai" onclick="openList('ai')">AI</button>
+      <button class="cat-btn outline" data-cat="econ" onclick="openList('econ')">경제·경영</button>
+      <button class="cat-btn outline" data-cat="money" onclick="openList('money')">재테크</button>
+    </div>
+  </section>
+
+  <!-- ========== 화면 2: 목록 (카테고리별 기사 리스트) ========== -->
+  <section id="screen-list" class="screen">
+    <button class="back-btn secondary outline" onclick="goHome()">← 카테고리로 돌아가기</button>
+    <div class="list-header">
+      <h2 id="list-title"></h2>
+      <button class="refresh-btn outline" id="refresh-btn" onclick="refreshData()">🔄 새로고침</button>
+    </div>
+    <p class="list-updated" id="list-updated"></p>
+    <div id="article-list"></div>
+  </section>
+
+  <!-- ========== 화면 3: 상세 (기사 하나 자세히 보기) ========== -->
+  <section id="screen-detail" class="screen">
+    <button class="back-btn secondary outline" onclick="goBackToList()">← 목록으로 돌아가기</button>
+    <p class="article-date" id="detail-date"></p>
+    <h2 id="detail-title"></h2>
+    <p id="detail-summary"></p>
+    <a id="detail-link" href="#" target="_blank" role="button">원문 기사 보러가기</a>
+  </section>
+
+<script>
+  /* =========================================================
+     1) 데이터를 어디서 가져올지 정하는 부분
+     - 실제 데이터는 /api/news.js 서버 함수가 네이버 뉴스 API를 대신 호출해서 줌
+     - 서버 함수가 없거나(로컬 미리보기) 아직 배포 전이라 호출이 실패하면
+       아래 더미데이터 20개로 자동 대체됨 (loadData 함수의 catch 부분 참고)
+     ========================================================= */
+
+  // 서버 함수 호출이 안 될 때 화면을 테스트할 더미데이터 20개
+  // category는 ai / econ / money 중 하나로 통일
+  const DUMMY_DATA = [
+    { title: "국내 기업, 생성형 AI 도입 속도 빨라져", summary: "여러 기업이 업무에 AI 도구를 적용하는 사례가 늘고 있음.", category: "ai", date: "2026-08-25", link: "#" },
+    { title: "대학가 AI 리터러시 교육 확산", summary: "전공과 무관하게 AI 활용 수업을 듣는 학생이 많아짐.", category: "ai", date: "2026-08-25", link: "#" },
+    { title: "AI 반도체 수요, 당분간 계속 늘 전망", summary: "관련 산업의 투자와 생산 확대가 이어지는 중.", category: "ai", date: "2026-08-24", link: "#" },
+    { title: "생성형 AI, 고객 상담 업무에도 도입", summary: "단순 문의 응대를 AI가 맡는 기업이 늘어나는 추세.", category: "ai", date: "2026-08-24", link: "#" },
+    { title: "국내 AI 스타트업 투자 유치 소식 잇따라", summary: "초기 단계 AI 기업들에 대한 투자가 활발해짐.", category: "ai", date: "2026-08-23", link: "#" },
+    { title: "AI 윤리 가이드라인, 업계 논의 본격화", summary: "책임 있는 AI 활용을 위한 논의가 확대되는 중.", category: "ai", date: "2026-08-22", link: "#" },
+    { title: "AI 코딩 도구, 개발자 생산성 높여", summary: "코드 작성 보조 도구 사용이 개발 현장에 자리 잡음.", category: "ai", date: "2026-08-21", link: "#" },
+    { title: "국내 경기 지표, 완만한 회복세", summary: "주요 지표들이 전분기 대비 소폭 개선된 것으로 나타남.", category: "econ", date: "2026-08-25", link: "#" },
+    { title: "중소기업 경영 환경, 여전히 어려움 지속", summary: "원자재 가격과 인건비 부담이 주요 원인으로 꼽힘.", category: "econ", date: "2026-08-25", link: "#" },
+    { title: "소비 트렌드, 가성비 중심으로 재편", summary: "합리적 소비를 중시하는 흐름이 뚜렷해지는 중.", category: "econ", date: "2026-08-24", link: "#" },
+    { title: "제조업 체감 경기, 소폭 개선", summary: "일부 업종에서 수출 여건이 나아진 것으로 조사됨.", category: "econ", date: "2026-08-23", link: "#" },
+    { title: "고용 지표, 서비스업 중심으로 개선", summary: "서비스업 취업자 수가 전월 대비 늘어난 것으로 집계됨.", category: "econ", date: "2026-08-22", link: "#" },
+    { title: "물가 상승세, 전월보다 둔화", summary: "주요 생활물가 품목의 상승폭이 줄어드는 모습.", category: "econ", date: "2026-08-21", link: "#" },
+    { title: "예금 금리, 소폭 조정 움직임", summary: "은행권 예금 상품 금리가 최근 조금씩 바뀌고 있음.", category: "money", date: "2026-08-25", link: "#" },
+    { title: "청년 대상 자산형성 지원 제도 확대", summary: "정부의 청년 저축 지원 정책이 넓어지는 추세임.", category: "money", date: "2026-08-25", link: "#" },
+    { title: "분산 투자, 다시 주목받는 이유", summary: "변동성 큰 시장 속 안정적 투자 방식이 재조명됨.", category: "money", date: "2026-08-24", link: "#" },
+    { title: "적립식 투자, 초보자에게 여전히 유효", summary: "장기·분할 매수 전략의 장점이 다시 강조되는 중.", category: "money", date: "2026-08-23", link: "#" },
+    { title: "퇴직연금 제도 개편 논의 진행", summary: "노후 자금 운용 방식에 대한 제도 개선이 검토되는 중.", category: "money", date: "2026-08-22", link: "#" },
+    { title: "가계부채 관리 방안, 추가 대책 예고", summary: "관계 부처가 가계부채 증가세에 대응할 방안을 검토 중.", category: "money", date: "2026-08-21", link: "#" },
+    { title: "환율 변동성, 투자 전략에 영향", summary: "최근 환율 움직임이 해외 투자 판단에 변수로 작용함.", category: "money", date: "2026-08-20", link: "#" }
+  ];
+
+  let ALL_ARTICLES = []; // 실제로 화면에 쓸 데이터 (CSV 또는 더미데이터)
+  let currentCategory = "ai";
+  let currentArticles = [];
+  let lastUpdated = null; // 마지막으로 새로고침한 시각
+
+  // 즐겨찾기한 기사를 기억해두는 곳 (제목을 기준으로 저장)
+  // 참고: 지금은 브라우저 메모리에만 저장돼서 새로고침(F5)하거나 창을 닫으면 초기화됨.
+  // 나중에 로그인 기능이 생기면 그때 서버나 저장소에 영구 저장하도록 바꾸면 됨.
+  const favorites = new Set();
+
+  const CAT_NAMES = { ai: "AI", econ: "경제·경영", money: "재테크" };
+
+  /* =========================================================
+     2) 데이터 준비: 서버 함수(/api/news)를 통해 네이버 뉴스 API 결과를 받아옴
+     - 브라우저가 네이버 API를 직접 부르지 않는 이유: Client Secret이 노출되면 안 되기 때문
+     - 그래서 우리가 만든 api/news.js 서버 함수를 대신 호출함
+     - 서버 함수 호출이 실패하면(아직 배포 전이거나 환경변수 미설정 등) 더미데이터로 대체
+     - onDone: 데이터 준비가 끝난 뒤 실행할 함수 (새로고침 버튼에서도 재사용)
+     ========================================================= */
+  async function loadData(onDone){
+    try {
+      // 지금 화면에 열려있는 카테고리(currentCategory) 기준으로 서버 함수 호출
+      const res = await fetch(`/api/news?category=${currentCategory}`);
+      if (!res.ok) throw new Error("서버 함수 응답 오류: " + res.status);
+      const data = await res.json();
+      if (!data.articles) throw new Error("응답 형식이 예상과 다름");
+
+      ALL_ARTICLES = data.articles;
+      lastUpdated = new Date();
+    } catch (err){
+      console.error("네이버 뉴스 API 불러오기 실패, 더미데이터로 대체함:", err);
+      // 실제 API처럼 "그 카테고리에 해당하는 것만" 돌려주는 형태로 맞춰줌
+      ALL_ARTICLES = DUMMY_DATA.filter(a => a.category === currentCategory);
+      lastUpdated = new Date();
+    }
+    if (onDone) onDone();
+  }
+
+  // 새로고침 버튼을 눌렀을 때: 데이터를 다시 받아와서 지금 보고 있는 카테고리를 다시 그림
+  function refreshData(){
+    const btn = document.getElementById("refresh-btn");
+    btn.disabled = true;
+    btn.innerText = "불러오는 중...";
+    loadData(function(){
+      renderList(currentCategory); // 같은 카테고리를 최신 데이터로 다시 그리기
+      btn.disabled = false;
+      btn.innerText = "🔄 새로고침";
+    });
+  }
+
+  /* =========================================================
+     3) 화면 전환 함수들
+     ========================================================= */
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function goHome(){
+    showScreen("screen-home");
+  }
+
+  // 카테고리 버튼 클릭 → 그 카테고리의 뉴스를 서버 함수에서 받아온 뒤 목록 화면으로 이동
+  function openList(cat){
+    currentCategory = cat;
+    const btn = document.getElementById("refresh-btn");
+    if (btn){ btn.disabled = true; btn.innerText = "불러오는 중..."; }
+
+    loadData(function(){
+      renderList(cat);
+      showScreen("screen-list");
+      if (btn){ btn.disabled = false; btn.innerText = "🔄 새로고침"; }
+    });
+  }
+
+  // 카테고리별 기사 카드 목록을 화면에 그리는 함수 (새로고침 시에도 재사용)
+  function renderList(cat){
+    currentCategory = cat;
+    currentArticles = ALL_ARTICLES.filter(a => a.category === cat);
+
+    document.getElementById("list-title").innerText = CAT_NAMES[cat] + " 뉴스";
+
+    // 마지막 새로고침 시각을 "오후 2:05 기준"처럼 보여줌
+    if (lastUpdated){
+      const h = lastUpdated.getHours();
+      const m = String(lastUpdated.getMinutes()).padStart(2, "0");
+      const ampm = h < 12 ? "오전" : "오후";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      document.getElementById("list-updated").innerText = `${ampm} ${h12}:${m} 기준`;
+    }
+
+    const listEl = document.getElementById("article-list");
+    listEl.innerHTML = "";
+    currentArticles.forEach((article, idx) => {
+      const isFav = favorites.has(article.title);
+
+      const card = document.createElement("div");
+      card.className = "article-card " + cat;
+      // 카드 자체를 클릭하면 상세 화면으로 이동 (단, 원문보기 링크·즐겨찾기 버튼 클릭은 예외 처리함)
+      card.onclick = () => openDetail(idx);
+      card.innerHTML = `
+        <p class="article-date">${article.date || ""}</p>
+        <h4>${article.title}</h4>
+        <p>${article.summary}</p>
+        <div class="card-actions">
+          <a href="${article.link || '#'}" target="_blank">원문 보기 →</a>
+          <button class="fav-btn ${isFav ? 'active' : ''}" title="즐겨찾기">${isFav ? '★' : '☆'}</button>
+        </div>
+      `;
+
+      // 원문보기 링크를 눌렀을 때 카드 클릭(상세 이동)까지 같이 실행되지 않도록 막음
+      card.querySelector(".card-actions a").onclick = (e) => e.stopPropagation();
+
+      // 즐겨찾기 별 버튼: 누르면 켜고 끄기 토글, 카드 클릭으로는 안 번지게 막음
+      card.querySelector(".fav-btn").onclick = (e) => {
+        e.stopPropagation();
+        toggleFavorite(article.title, e.target);
+      };
+
+      listEl.appendChild(card);
+    });
+  }
+
+  // 즐겨찾기 켜고 끄기
+  function toggleFavorite(title, btnEl){
+    if (favorites.has(title)){
+      favorites.delete(title);
+      btnEl.classList.remove("active");
+      btnEl.innerText = "☆";
+    } else {
+      favorites.add(title);
+      btnEl.classList.add("active");
+      btnEl.innerText = "★";
+    }
+  }
+
+  // 기사 카드 클릭 → 상세 화면으로 이동
+  function openDetail(idx){
+    const article = currentArticles[idx];
+    document.getElementById("detail-date").innerText = article.date || "";
+    document.getElementById("detail-title").innerText = article.title;
+    document.getElementById("detail-summary").innerText = article.summary;
+    document.getElementById("detail-link").href = article.link || "#";
+    showScreen("screen-detail");
+  }
+
+  function goBackToList(){
+    showScreen("screen-list");
+  }
+
+  /* 참고: 매일 아침 8시 자동 새로고침이나 실시간 갱신은
+     지금처럼 사용자가 브라우저를 열고 있어야만 동작하는 방식으로는 한계가 있음.
+     이건 "정해진 시간에 서버가 알아서 작업을 실행하는" 스케줄링 기능이 필요해서
+     다음 단계(자동화)에서 다룰 부분으로 남겨둠 - 지금은 카테고리 클릭 시점에 그때그때
+     최신 뉴스를 받아오고, 새로고침 버튼으로 다시 받아오는 방식까지 완성. */
+</script>
+
+</body>
+</html>
