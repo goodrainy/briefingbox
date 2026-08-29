@@ -34,12 +34,13 @@ export default async function handler(req, res) {
 
   try {
     // 네이버 뉴스 검색 API를 서버 쪽에서 대신 호출
-    const naverUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=10&sort=date`;
+    // (NAVER API HUB로 이관된 새 주소/헤더 형식 사용)
+    const naverUrl = `https://naverapihub.apigw.ntruss.com/search/v1/news?query=${encodeURIComponent(query)}&display=10&sort=date`;
 
     const naverRes = await fetch(naverUrl, {
       headers: {
-        "X-Naver-Client-Id": clientId,
-        "X-Naver-Client-Secret": clientSecret
+        "X-NCP-APIGW-API-KEY-ID": clientId,
+        "X-NCP-APIGW-API-KEY": clientSecret
       }
     });
 
