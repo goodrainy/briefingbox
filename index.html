@@ -1,333 +1,727 @@
-<!--
-  브리핑박스 - index.html 한 파일 버전
-  - 빌드 도구 없음, 프레임워크 없음
-  - 스타일: Pico.css (CDN)
-  - 데이터: /api/news.js 서버 함수를 통해 네이버 뉴스 검색 API 결과를 받아옴
-    (서버 함수 없이 미리보기만 열었을 때는 자동으로 더미데이터로 대체됨)
-  - 화면 3개: ① 홈(카테고리 선택) ② 목록(카테고리별 기사) ③ 상세(기사 하나 자세히)
--->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>브리핑박스</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>뉴스한입 - 관심 분야 뉴스 요약 서비스</title>
 
-<!-- Pico.css: 클래스 거의 안 써도 기본적으로 깔끔하게 보이게 해주는 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<!-- 구글 폰트 불러오기: 제목용(Do Hyeon)과 본문용(Noto Sans KR) 두 가지를 사용해요 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 
 <style>
-  /* ===== Pico.css 기본값 위에 우리 서비스만의 포인트를 살짝 얹는 부분 ===== */
-  :root{
-    --c-ai: #3D6B99;
-    --c-econ: #8B5E34;
-    --c-money: #3F7D5C;
-  }
-  body{ max-width: 720px; margin: 0 auto; padding: 0 16px; }
+  /* ===============================
+     [강사 피드백 반영 영역]
+     추후 강사님께 받은 피드백 내용을
+     아래 "00" 표시가 있는 부분에 직접 채워 넣고,
+     관련 코드를 함께 수정하면 됩니다.
+     예) /* 강사 피드백: 00 */ -> /* 강사 피드백: 버튼 색상을 더 눈에 띄게 수정 */
+     =============================== */
 
-  header.site-header{ padding: 20px 0 4px; display:flex; align-items:center; gap:8px; }
-  .logo-mark{
-    width:28px; height:28px; border-radius:6px; background:#1C2333;
-    color:#fff; display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:14px;
-  }
-
-  /* 화면 전환용: 3개 화면 중 active만 보이고 나머지는 숨김 */
-  .screen{ display:none; }
-  .screen.active{ display:block; }
-
-  /* 홈 화면 - 카테고리 버튼을 크게 강조 (서비스 핵심이라서) */
-  .hero h1{ font-size: 26px; line-height:1.4; margin-bottom:8px; }
-  .hero p{ color: var(--pico-muted-color); margin-bottom: 20px; }
-  .cat-grid{
-    display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  }
-  .cat-btn{
-    padding: 18px 8px; font-weight:700; font-size:15px;
-    border-radius: 12px; text-align:center; cursor:pointer;
-  }
-  .cat-btn[data-cat="ai"]{ border-color: var(--c-ai); color: var(--c-ai); }
-  .cat-btn[data-cat="econ"]{ border-color: var(--c-econ); color: var(--c-econ); }
-  .cat-btn[data-cat="money"]{ border-color: var(--c-money); color: var(--c-money); }
-
-  /* 모바일에서는 카테고리 버튼 세로로 쌓기 */
-  @media (max-width: 480px){
-    .cat-grid{ grid-template-columns: 1fr; }
+  /* 전체 공통 스타일 초기화 */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
 
-  /* 목록 화면 카드 */
-  .article-card{
-    border: 1px solid var(--pico-muted-border-color);
-    border-left: 5px solid #1C2333;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
+  :root {
+    /* 색상을 변수로 관리하면 나중에 색만 바꿔서 분위기를 쉽게 바꿀 수 있어요 */
+    --color-primary: #2f6fed;
+    --color-primary-dark: #1e4fc4;
+    --color-accent: #ffb703;
+    --color-bg: #f7f9fc;
+    --color-text: #1b1f27;
+    --color-text-light: #6b7280;
+    --color-card-bg: #ffffff;
+    --color-border: #e5e9f0;
+    --radius: 16px;
+  }
+
+  body {
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    overflow-x: hidden; /* 모바일에서 가로 스크롤 방지 */
+  }
+
+  /* 제목류는 살짝 개성 있는 폰트로 통일해서 사용해요 */
+  h1, h2, h3, h4, .logo {
+    font-family: "Do Hyeon", "Noto Sans KR", sans-serif;
+    font-weight: 400; /* Do Hyeon은 자체적으로 굵은 느낌이라 400이 기본이에요 */
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* ---------- 헤더 (로고 영역) ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 6%;
+    background: var(--color-card-bg);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--color-primary-dark);
+  }
+
+  .logo .logo-icon {
+    font-size: 1.6rem;
+  }
+
+  header nav span {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+  }
+
+  /* ---------- 히어로(첫 화면 메인) 영역 ---------- */
+  .hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 70px 6% 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-text {
+    flex: 1 1 420px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: #eaf1ff;
+    color: var(--color-primary-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+
+  .hero-text h1 {
+    font-size: clamp(1.8rem, 4vw, 2.7rem);
+    font-weight: 800;
+    line-height: 1.35;
+    margin-bottom: 18px;
+  }
+
+  .hero-text h1 .highlight {
+    color: var(--color-primary);
+  }
+
+  .hero-text p.desc {
+    font-size: 1.05rem;
+    color: var(--color-text-light);
+    margin-bottom: 30px;
+    max-width: 480px;
+  }
+
+  /* 대표 CTA 버튼 */
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 16px 28px;
+    border: none;
+    border-radius: 999px;
     cursor: pointer;
+    box-shadow: 0 10px 20px rgba(47, 111, 237, 0.25);
+    transition: transform 0.15s ease, background 0.15s ease;
   }
-  .article-card.ai{ border-left-color: var(--c-ai); }
-  .article-card.econ{ border-left-color: var(--c-econ); }
-  .article-card.money{ border-left-color: var(--c-money); }
-  .article-card h4{ margin: 0 0 6px; font-size: 15px; }
-  .article-card p{ margin: 0 0 8px; font-size: 13px; color: var(--pico-muted-color); }
-  .article-date{ font-size: 11px; color: var(--pico-muted-color); }
 
-  .back-btn{ margin-bottom: 14px; }
+  .cta-btn:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-2px);
+  }
 
-  /* 목록 상단: 제목 + 새로고침 버튼을 한 줄에 배치 */
-  .list-header{
-    display:flex; align-items:center; justify-content:space-between;
+  .hero-sub-note {
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+  }
+
+  /* ---------- 히어로 일러스트 (간단한 SVG 도형으로 신문/카드 느낌 표현) ---------- */
+  .hero-illustration {
+    flex: 1 1 320px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .hero-illustration svg {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+  }
+
+  /* ---------- 기능 소개 섹션 ---------- */
+  .features {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 6% 70px;
+  }
+
+  .features h2 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 40px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .feature-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 28px 22px;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .feature-card .icon {
+    font-size: 2rem;
+    margin-bottom: 14px;
+  }
+
+  .feature-card h3 {
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+  }
+
+  .feature-card p {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+  }
+
+  /* ---------- 카테고리 선택 섹션 (서비스 첫 행동: 카테고리 고르기) ---------- */
+  .category-section {
+    background: #fff;
+    border-top: 1px solid var(--color-border);
+    padding: 60px 6% 80px;
+  }
+
+  .category-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .category-inner h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .category-inner .sub {
+    color: var(--color-text-light);
+    margin-bottom: 34px;
+    font-size: 0.95rem;
+  }
+
+  /* 카테고리 버튼들을 감싸는 영역 */
+  .category-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+
+  .category-chip {
+    padding: 12px 22px;
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .category-chip:hover {
+    border-color: var(--color-primary);
+  }
+
+  /* 선택된 카테고리 버튼 스타일 */
+  .category-chip.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+  }
+
+  /* 카테고리를 고르면 나타나는 요약 카드 영역 */
+  .summary-preview {
+    text-align: left;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 26px;
+    display: none; /* 기본은 숨김, 카테고리 선택 시 JS로 보여줌 */
+  }
+
+  .summary-preview.show {
+    display: block;
+  }
+
+  .summary-preview .tag {
+    display: inline-block;
+    background: #fff3cd;
+    color: #92720a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .summary-preview h4 {
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+  }
+
+  /* 요약 카드 하나 = 제목 한 줄 + "더 보기" 버튼 + (펼쳤을 때) 관련 기사 목록 */
+  .news-card {
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--color-border);
+  }
+
+  .news-card:last-child {
+    border-bottom: none;
+  }
+
+  .news-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* 제목 부분 = 클릭하면 원문 기사로 바로 이동하는 링크 */
+  .news-title {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    font-size: 0.92rem;
+    color: var(--color-text);
+  }
+
+  .news-title:hover {
+    color: var(--color-primary);
+  }
+
+  .news-title .bullet {
+    color: var(--color-primary);
+    font-weight: 800;
+  }
+
+  /* 더 보기 / 접기 버튼 */
+  .more-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .more-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  /* 더 보기를 누르면 펼쳐지는 관련 기사 목록 영역 */
+  .related-panel {
+    margin-top: 12px;
+    margin-left: 20px;
+    padding-left: 16px;
+    border-left: 2px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .related-item {
+    font-size: 0.86rem;
+  }
+
+  .related-title {
+    font-weight: 700;
     margin-bottom: 4px;
   }
-  .list-header h2{ margin:0; }
-  .refresh-btn{
-    padding: 6px 14px; font-size: 13px; white-space: nowrap;
-  }
-  .list-updated{
-    font-size: 12px; color: var(--pico-muted-color); margin: 0 0 16px;
+
+  .related-desc {
+    color: var(--color-text-light);
+    margin-bottom: 6px;
+    line-height: 1.5;
   }
 
-  /* 카드 하단: 원문보기 링크 + 즐겨찾기 별 버튼을 나란히 배치 */
-  .card-actions{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-top: 8px;
+  .related-link {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 0.82rem;
   }
-  .card-actions a{ font-size: 12px; }
-  .fav-btn{
-    background:none; border:none; cursor:pointer;
-    font-size: 18px; line-height:1; padding: 0 4px;
+
+  .related-link:hover {
+    color: var(--color-primary-dark);
   }
-  .fav-btn.active{ color:#E8A33D; } /* 즐겨찾기 켜지면 별이 노란색으로 */
-  .fav-btn:not(.active){ color: var(--pico-muted-border-color); }
+
+  /* 뉴스를 불러오는 중이거나 결과가 없을 때 보여주는 안내 문구 */
+  .summary-status {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+  }
+
+  /* ---------- 푸터 ---------- */
+  footer {
+    text-align: center;
+    padding: 26px 6%;
+    color: var(--color-text-light);
+    font-size: 0.82rem;
+  }
+
+  /* ---------- 모바일 반응형 ---------- */
+  @media (max-width: 700px) {
+    .hero {
+      flex-direction: column-reverse;
+      padding-top: 40px;
+      text-align: center;
+    }
+
+    .hero-text p.desc {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+
+    header {
+      padding: 16px 5%;
+    }
+
+    header nav span {
+      display: none; /* 모바일에서는 우측 안내 문구 숨김 */
+    }
+  }
 </style>
 </head>
 <body>
 
-  <header class="site-header">
-    <div class="logo-mark">B</div>
-    <strong>브리핑박스</strong>
+  <!-- ================= 헤더: 서비스 로고 ================= -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">📰</span>
+      <span>뉴스한입</span>
+    </div>
+    <nav>
+      <span>바쁜 당신을 위한 뉴스 요약</span>
+    </nav>
   </header>
 
-  <!-- ========== 화면 1: 홈 (카테고리 선택) ========== -->
-  <section id="screen-home" class="screen active">
-    <div class="hero">
-      <h1>바빠서 못 챙긴 뉴스,<br>카테고리 하나로 정리해서 보여드려요</h1>
-      <p>관심 카테고리를 고르면, 오늘 볼 만한 기사만 한 줄 요약과 함께 모아드려요.</p>
+  <!-- ================= 히어로 섹션: 큰 제목 + 문제 설명 + CTA 버튼 ================= -->
+  <section class="hero">
+    <div class="hero-text">
+      <span class="hero-badge">사회현상을 놓치고 싶지 않은 당신에게</span>
+      <h1>뉴스 다 읽을 시간,<br /><span class="highlight">솔직히 없잖아요.</span></h1>
+      <p class="desc">
+        하루 종일 쏟아지는 기사들, 다 챙겨 보기엔 시간이 부족하죠.
+        관심 있는 분야만 골라두면, 꼭 알아야 할 소식만 짧게 정리해서 보여드려요.
+      </p>
+
+      <!-- 대표 버튼: 클릭하면 아래 카테고리 선택 영역으로 이동 -->
+      <button class="cta-btn" onclick="scrollToCategory()">
+        카테고리 선택하고 시작하기 →
+      </button>
+
+      <p class="hero-sub-note">회원가입 없이, 지금 바로 체험해볼 수 있어요.</p>
     </div>
-    <div class="cat-grid">
-      <button class="cat-btn outline" data-cat="ai" onclick="openList('ai')">AI</button>
-      <button class="cat-btn outline" data-cat="econ" onclick="openList('econ')">경제·경영</button>
-      <button class="cat-btn outline" data-cat="money" onclick="openList('money')">재테크</button>
+
+    <!-- 간단한 SVG 일러스트: 뉴스 카드가 쌓여있는 느낌을 도형으로 표현 -->
+    <div class="hero-illustration">
+      <svg viewBox="0 0 380 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="60" width="260" height="180" rx="18" fill="#eaf1ff"/>
+        <rect x="70" y="30" width="260" height="180" rx="18" fill="#ffffff" stroke="#e5e9f0" stroke-width="2"/>
+        <rect x="95" y="60" width="140" height="14" rx="7" fill="#2f6fed"/>
+        <rect x="95" y="90" width="200" height="10" rx="5" fill="#dbe4f3"/>
+        <rect x="95" y="110" width="200" height="10" rx="5" fill="#dbe4f3"/>
+        <rect x="95" y="130" width="130" height="10" rx="5" fill="#dbe4f3"/>
+        <circle cx="270" cy="150" r="26" fill="#ffb703"/>
+        <text x="270" y="157" font-size="20" text-anchor="middle" fill="#fff" font-family="sans-serif">✓</text>
+        <rect x="95" y="165" width="200" height="1" stroke="#e5e9f0"/>
+        <rect x="95" y="180" width="150" height="10" rx="5" fill="#dbe4f3"/>
+      </svg>
     </div>
   </section>
 
-  <!-- ========== 화면 2: 목록 (카테고리별 기사 리스트) ========== -->
-  <section id="screen-list" class="screen">
-    <button class="back-btn secondary outline" onclick="goHome()">← 카테고리로 돌아가기</button>
-    <div class="list-header">
-      <h2 id="list-title"></h2>
-      <button class="refresh-btn outline" id="refresh-btn" onclick="refreshData()">🔄 새로고침</button>
+  <!-- ================= 핵심 기능 3가지 소개 ================= -->
+  <section class="features">
+    <h2>뉴스한입이 하는 일, 딱 3가지</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📌</div>
+        <h3>관심 카테고리 선택</h3>
+        <p>정치, 경제, IT, 문화 등 궁금한 분야만 골라서 볼 수 있어요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⏱️</div>
+        <h3>한입 크기 요약</h3>
+        <p>긴 기사 대신, 핵심만 담은 짧은 요약으로 빠르게 확인해요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔗</div>
+        <h3>원문 바로가기</h3>
+        <p>궁금한 소식은 요약 한 줄을 눌러 원문 기사에서 자세히 볼 수 있어요.</p>
+      </div>
     </div>
-    <p class="list-updated" id="list-updated"></p>
-    <div id="article-list"></div>
   </section>
 
-  <!-- ========== 화면 3: 상세 (기사 하나 자세히 보기) ========== -->
-  <section id="screen-detail" class="screen">
-    <button class="back-btn secondary outline" onclick="goBackToList()">← 목록으로 돌아가기</button>
-    <p class="article-date" id="detail-date"></p>
-    <h2 id="detail-title"></h2>
-    <p id="detail-summary"></p>
-    <a id="detail-link" href="#" target="_blank" role="button">원문 기사 보러가기</a>
+  <!-- ================= 카테고리 선택 섹션 (서비스의 첫 행동 영역) ================= -->
+  <section class="category-section" id="category-section">
+    <div class="category-inner">
+      <h2>지금, 어떤 소식이 궁금하세요?</h2>
+      <p class="sub">관심 있는 카테고리를 눌러보세요. 실제 뉴스 요약을 바로 보여드릴게요.</p>
+
+      <!-- 카테고리 버튼 목록: data-category 값으로 어떤 카테고리인지 구분 -->
+      <div class="category-list" id="category-list">
+        <button class="category-chip" data-category="정치">🏛️ 정치</button>
+        <button class="category-chip" data-category="경제">💰 경제</button>
+        <button class="category-chip" data-category="IT">💻 IT·과학</button>
+        <button class="category-chip" data-category="문화">🎨 문화</button>
+        <button class="category-chip" data-category="스포츠">⚽ 스포츠</button>
+      </div>
+
+      <!-- 카테고리를 선택하면 이 영역에 실제 뉴스 요약이 나타남 -->
+      <div class="summary-preview" id="summary-preview">
+        <span class="tag">뉴스 요약</span>
+        <h4 id="summary-title">카테고리를 선택하면 여기에 요약이 표시돼요</h4>
+        <div id="summary-list"></div>
+      </div>
+    </div>
   </section>
+
+  <!-- ================= 푸터 ================= -->
+  <footer>
+    © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
+  </footer>
 
 <script>
-  /* =========================================================
-     1) 데이터를 어디서 가져올지 정하는 부분
-     - 실제 데이터는 /api/news.js 서버 함수가 네이버 뉴스 API를 대신 호출해서 줌
-     - 서버 함수가 없거나(로컬 미리보기) 아직 배포 전이라 호출이 실패하면
-       아래 더미데이터 20개로 자동 대체됨 (loadData 함수의 catch 부분 참고)
-     ========================================================= */
+  // ===============================
+  // 카테고리 이름 -> 네이버 뉴스 검색에 사용할 검색어 매핑
+  // (예: "IT" 버튼을 눌러도 검색은 "IT 과학"으로 더 정확하게 검색되도록)
+  // ===============================
+  const categoryQueryMap = {
+    "정치": "정치",
+    "경제": "경제",
+    "IT": "IT 과학",
+    "문화": "문화",
+    "스포츠": "스포츠",
+  };
 
-  // 서버 함수 호출이 안 될 때 화면을 테스트할 더미데이터 20개
-  // category는 ai / econ / money 중 하나로 통일
-  const DUMMY_DATA = [
-    { title: "국내 기업, 생성형 AI 도입 속도 빨라져", summary: "여러 기업이 업무에 AI 도구를 적용하는 사례가 늘고 있음.", category: "ai", date: "2026-08-25", link: "#" },
-    { title: "대학가 AI 리터러시 교육 확산", summary: "전공과 무관하게 AI 활용 수업을 듣는 학생이 많아짐.", category: "ai", date: "2026-08-25", link: "#" },
-    { title: "AI 반도체 수요, 당분간 계속 늘 전망", summary: "관련 산업의 투자와 생산 확대가 이어지는 중.", category: "ai", date: "2026-08-24", link: "#" },
-    { title: "생성형 AI, 고객 상담 업무에도 도입", summary: "단순 문의 응대를 AI가 맡는 기업이 늘어나는 추세.", category: "ai", date: "2026-08-24", link: "#" },
-    { title: "국내 AI 스타트업 투자 유치 소식 잇따라", summary: "초기 단계 AI 기업들에 대한 투자가 활발해짐.", category: "ai", date: "2026-08-23", link: "#" },
-    { title: "AI 윤리 가이드라인, 업계 논의 본격화", summary: "책임 있는 AI 활용을 위한 논의가 확대되는 중.", category: "ai", date: "2026-08-22", link: "#" },
-    { title: "AI 코딩 도구, 개발자 생산성 높여", summary: "코드 작성 보조 도구 사용이 개발 현장에 자리 잡음.", category: "ai", date: "2026-08-21", link: "#" },
-    { title: "국내 경기 지표, 완만한 회복세", summary: "주요 지표들이 전분기 대비 소폭 개선된 것으로 나타남.", category: "econ", date: "2026-08-25", link: "#" },
-    { title: "중소기업 경영 환경, 여전히 어려움 지속", summary: "원자재 가격과 인건비 부담이 주요 원인으로 꼽힘.", category: "econ", date: "2026-08-25", link: "#" },
-    { title: "소비 트렌드, 가성비 중심으로 재편", summary: "합리적 소비를 중시하는 흐름이 뚜렷해지는 중.", category: "econ", date: "2026-08-24", link: "#" },
-    { title: "제조업 체감 경기, 소폭 개선", summary: "일부 업종에서 수출 여건이 나아진 것으로 조사됨.", category: "econ", date: "2026-08-23", link: "#" },
-    { title: "고용 지표, 서비스업 중심으로 개선", summary: "서비스업 취업자 수가 전월 대비 늘어난 것으로 집계됨.", category: "econ", date: "2026-08-22", link: "#" },
-    { title: "물가 상승세, 전월보다 둔화", summary: "주요 생활물가 품목의 상승폭이 줄어드는 모습.", category: "econ", date: "2026-08-21", link: "#" },
-    { title: "예금 금리, 소폭 조정 움직임", summary: "은행권 예금 상품 금리가 최근 조금씩 바뀌고 있음.", category: "money", date: "2026-08-25", link: "#" },
-    { title: "청년 대상 자산형성 지원 제도 확대", summary: "정부의 청년 저축 지원 정책이 넓어지는 추세임.", category: "money", date: "2026-08-25", link: "#" },
-    { title: "분산 투자, 다시 주목받는 이유", summary: "변동성 큰 시장 속 안정적 투자 방식이 재조명됨.", category: "money", date: "2026-08-24", link: "#" },
-    { title: "적립식 투자, 초보자에게 여전히 유효", summary: "장기·분할 매수 전략의 장점이 다시 강조되는 중.", category: "money", date: "2026-08-23", link: "#" },
-    { title: "퇴직연금 제도 개편 논의 진행", summary: "노후 자금 운용 방식에 대한 제도 개선이 검토되는 중.", category: "money", date: "2026-08-22", link: "#" },
-    { title: "가계부채 관리 방안, 추가 대책 예고", summary: "관계 부처가 가계부채 증가세에 대응할 방안을 검토 중.", category: "money", date: "2026-08-21", link: "#" },
-    { title: "환율 변동성, 투자 전략에 영향", summary: "최근 환율 움직임이 해외 투자 판단에 변수로 작용함.", category: "money", date: "2026-08-20", link: "#" }
-  ];
+  // 대표 버튼 클릭 시 카테고리 선택 영역으로 부드럽게 스크롤 이동
+  function scrollToCategory() {
+    document.getElementById("category-section").scrollIntoView({ behavior: "smooth" });
+  }
 
-  let ALL_ARTICLES = []; // 실제로 화면에 쓸 데이터 (CSV 또는 더미데이터)
-  let currentCategory = "ai";
-  let currentArticles = [];
-  let lastUpdated = null; // 마지막으로 새로고침한 시각
+  const chips = document.querySelectorAll(".category-chip");
+  const preview = document.getElementById("summary-preview");
+  const summaryTitle = document.getElementById("summary-title");
+  const summaryList = document.getElementById("summary-list");
 
-  // 즐겨찾기한 기사를 기억해두는 곳 (제목을 기준으로 저장)
-  // 참고: 지금은 브라우저 메모리에만 저장돼서 새로고침(F5)하거나 창을 닫으면 초기화됨.
-  // 나중에 로그인 기능이 생기면 그때 서버나 저장소에 영구 저장하도록 바꾸면 됨.
-  const favorites = new Set();
+  // 네이버 API가 돌려주는 제목에는 <b>강조</b> 태그와 &quot; 같은 특수문자 코드가
+  // 섞여 있어서, 화면에 깔끔한 글자로 보여주기 위해 정리하는 함수예요.
+  function cleanText(rawText) {
+    return rawText
+      .replace(/<b>|<\/b>/g, "")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&#39;/g, "'");
+  }
 
-  const CAT_NAMES = { ai: "AI", econ: "경제·경영", money: "재테크" };
+  // 기사 하나(item)를 받아서, "제목 줄 + 더 보기 버튼 + 관련 기사 목록" 카드를 만드는 함수
+  function createNewsCard(item) {
+    const title = cleanText(item.title);
+    // originallink(언론사 원문)가 있으면 그걸 쓰고, 없으면 네이버 뉴스 링크(link)를 사용
+    const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
 
-  /* =========================================================
-     2) 데이터 준비: 서버 함수(/api/news)를 통해 네이버 뉴스 API 결과를 받아옴
-     - 브라우저가 네이버 API를 직접 부르지 않는 이유: Client Secret이 노출되면 안 되기 때문
-     - 그래서 우리가 만든 api/news.js 서버 함수를 대신 호출함
-     - 서버 함수 호출이 실패하면(아직 배포 전이거나 환경변수 미설정 등) 더미데이터로 대체
-     - onDone: 데이터 준비가 끝난 뒤 실행할 함수 (새로고침 버튼에서도 재사용)
-     ========================================================= */
-  async function loadData(onDone){
+    const card = document.createElement("div");
+    card.className = "news-card";
+
+    // 제목 줄 + 더 보기 버튼을 담는 헤더
+    const header = document.createElement("div");
+    header.className = "news-card-header";
+
+    const titleLink = document.createElement("a");
+    titleLink.className = "news-title";
+    titleLink.href = url;
+    titleLink.target = "_blank"; // 새 탭에서 원문 기사 열기
+    titleLink.rel = "noopener noreferrer";
+    titleLink.innerHTML = `<span class="bullet">•</span><span>${title}</span>`;
+
+    const moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "more-btn";
+    moreBtn.textContent = "더 보기 ▾";
+
+    header.appendChild(titleLink);
+    header.appendChild(moreBtn);
+
+    // 더 보기를 누르면 펼쳐지는 관련 기사 영역 (처음엔 숨김)
+    const relatedPanel = document.createElement("div");
+    relatedPanel.className = "related-panel";
+    relatedPanel.hidden = true;
+
+    let loaded = false; // 관련 기사를 이미 한 번 불러왔는지 (중복 요청 방지용)
+
+    moreBtn.addEventListener("click", () => {
+      const isOpen = !relatedPanel.hidden;
+
+      if (isOpen) {
+        // 이미 펼쳐진 상태라면 다시 눌렀을 때 접기
+        relatedPanel.hidden = true;
+        moreBtn.textContent = "더 보기 ▾";
+        return;
+      }
+
+      relatedPanel.hidden = false;
+      moreBtn.textContent = "접기 ▴";
+
+      if (!loaded) {
+        loadRelatedArticles(title, relatedPanel);
+        loaded = true;
+      }
+    });
+
+    card.appendChild(header);
+    card.appendChild(relatedPanel);
+    return card;
+  }
+
+  // 기사 제목 전체를 검색어로 사용해서, 관련 기사 3~4개를 불러와 패널에 채워 넣는 함수
+  // (AI 요약 없이, 네이버 검색 결과를 제목 + 스니펫 + 원문 링크 형태로 그대로 보여줌)
+  async function loadRelatedArticles(searchTitle, panelElement) {
+    panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
+
     try {
-      // 지금 화면에 열려있는 카테고리(currentCategory) 기준으로 서버 함수 호출
-      const res = await fetch(`/api/news?category=${currentCategory}`);
-      if (!res.ok) throw new Error("서버 함수 응답 오류: " + res.status);
-      const data = await res.json();
-      if (!data.articles) throw new Error("응답 형식이 예상과 다름");
+      const response = await fetch(
+        `/api/news?query=${encodeURIComponent(searchTitle)}&display=4`
+      );
+      const data = await response.json();
 
-      ALL_ARTICLES = data.articles;
-      lastUpdated = new Date();
-    } catch (err){
-      console.error("네이버 뉴스 API 불러오기 실패, 더미데이터로 대체함:", err);
-      // 실제 API처럼 "그 카테고리에 해당하는 것만" 돌려주는 형태로 맞춰줌
-      ALL_ARTICLES = DUMMY_DATA.filter(a => a.category === currentCategory);
-      lastUpdated = new Date();
-    }
-    if (onDone) onDone();
-  }
+      if (!response.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
+      }
 
-  // 새로고침 버튼을 눌렀을 때: 데이터를 다시 받아와서 지금 보고 있는 카테고리를 다시 그림
-  function refreshData(){
-    const btn = document.getElementById("refresh-btn");
-    btn.disabled = true;
-    btn.innerText = "불러오는 중...";
-    loadData(function(){
-      renderList(currentCategory); // 같은 카테고리를 최신 데이터로 다시 그리기
-      btn.disabled = false;
-      btn.innerText = "🔄 새로고침";
-    });
-  }
+      if (!data.items || data.items.length === 0) {
+        panelElement.innerHTML = '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
+        return;
+      }
 
-  /* =========================================================
-     3) 화면 전환 함수들
-     ========================================================= */
-  function showScreen(id){
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-  }
+      panelElement.innerHTML = "";
 
-  function goHome(){
-    showScreen("screen-home");
-  }
+      data.items.forEach((relatedItem) => {
+        const relatedTitle = cleanText(relatedItem.title);
+        const relatedDesc = cleanText(relatedItem.description);
+        const relatedUrl =
+          relatedItem.originallink && relatedItem.originallink.length > 0
+            ? relatedItem.originallink
+            : relatedItem.link;
 
-  // 카테고리 버튼 클릭 → 그 카테고리의 뉴스를 서버 함수에서 받아온 뒤 목록 화면으로 이동
-  function openList(cat){
-    currentCategory = cat;
-    const btn = document.getElementById("refresh-btn");
-    if (btn){ btn.disabled = true; btn.innerText = "불러오는 중..."; }
-
-    loadData(function(){
-      renderList(cat);
-      showScreen("screen-list");
-      if (btn){ btn.disabled = false; btn.innerText = "🔄 새로고침"; }
-    });
-  }
-
-  // 카테고리별 기사 카드 목록을 화면에 그리는 함수 (새로고침 시에도 재사용)
-  function renderList(cat){
-    currentCategory = cat;
-    currentArticles = ALL_ARTICLES.filter(a => a.category === cat);
-
-    document.getElementById("list-title").innerText = CAT_NAMES[cat] + " 뉴스";
-
-    // 마지막 새로고침 시각을 "오후 2:05 기준"처럼 보여줌
-    if (lastUpdated){
-      const h = lastUpdated.getHours();
-      const m = String(lastUpdated.getMinutes()).padStart(2, "0");
-      const ampm = h < 12 ? "오전" : "오후";
-      const h12 = h % 12 === 0 ? 12 : h % 12;
-      document.getElementById("list-updated").innerText = `${ampm} ${h12}:${m} 기준`;
-    }
-
-    const listEl = document.getElementById("article-list");
-    listEl.innerHTML = "";
-    currentArticles.forEach((article, idx) => {
-      const isFav = favorites.has(article.title);
-
-      const card = document.createElement("div");
-      card.className = "article-card " + cat;
-      // 카드 자체를 클릭하면 상세 화면으로 이동 (단, 원문보기 링크·즐겨찾기 버튼 클릭은 예외 처리함)
-      card.onclick = () => openDetail(idx);
-      card.innerHTML = `
-        <p class="article-date">${article.date || ""}</p>
-        <h4>${article.title}</h4>
-        <p>${article.summary}</p>
-        <div class="card-actions">
-          <a href="${article.link || '#'}" target="_blank">원문 보기 →</a>
-          <button class="fav-btn ${isFav ? 'active' : ''}" title="즐겨찾기">${isFav ? '★' : '☆'}</button>
-        </div>
-      `;
-
-      // 원문보기 링크를 눌렀을 때 카드 클릭(상세 이동)까지 같이 실행되지 않도록 막음
-      card.querySelector(".card-actions a").onclick = (e) => e.stopPropagation();
-
-      // 즐겨찾기 별 버튼: 누르면 켜고 끄기 토글, 카드 클릭으로는 안 번지게 막음
-      card.querySelector(".fav-btn").onclick = (e) => {
-        e.stopPropagation();
-        toggleFavorite(article.title, e.target);
-      };
-
-      listEl.appendChild(card);
-    });
-  }
-
-  // 즐겨찾기 켜고 끄기
-  function toggleFavorite(title, btnEl){
-    if (favorites.has(title)){
-      favorites.delete(title);
-      btnEl.classList.remove("active");
-      btnEl.innerText = "☆";
-    } else {
-      favorites.add(title);
-      btnEl.classList.add("active");
-      btnEl.innerText = "★";
+        const relatedCard = document.createElement("div");
+        relatedCard.className = "related-item";
+        relatedCard.innerHTML = `
+          <p class="related-title">${relatedTitle}</p>
+          <p class="related-desc">${relatedDesc}</p>
+          <a class="related-link" href="${relatedUrl}" target="_blank" rel="noopener noreferrer">원문보기 →</a>
+        `;
+        panelElement.appendChild(relatedCard);
+      });
+    } catch (error) {
+      panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오지 못했어요.</p>';
+      console.error(error);
     }
   }
 
-  // 기사 카드 클릭 → 상세 화면으로 이동
-  function openDetail(idx){
-    const article = currentArticles[idx];
-    document.getElementById("detail-date").innerText = article.date || "";
-    document.getElementById("detail-title").innerText = article.title;
-    document.getElementById("detail-summary").innerText = article.summary;
-    document.getElementById("detail-link").href = article.link || "#";
-    showScreen("screen-detail");
+  // 선택한 카테고리의 실제 뉴스를 가져와서 요약 카드 목록으로 보여주는 함수
+  async function loadCategorySummary(category) {
+    preview.classList.add("show");
+    summaryTitle.textContent = `${category} 뉴스를 불러오는 중...`;
+    summaryList.innerHTML = "";
+
+    try {
+      // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
+      // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
+      const query = categoryQueryMap[category];
+      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
+      }
+
+      if (!data.items || data.items.length === 0) {
+        summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
+        return;
+      }
+
+      summaryTitle.textContent = `오늘의 ${category} 이슈 요약`;
+
+      // 뉴스 하나하나를 "더 보기"가 달린 카드로 만들어서 목록에 추가
+      data.items.forEach((item) => {
+        summaryList.appendChild(createNewsCard(item));
+      });
+    } catch (error) {
+      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+      console.error(error);
+    }
   }
 
-  function goBackToList(){
-    showScreen("screen-list");
-  }
+  // 카테고리 버튼들에 클릭 이벤트 연결
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
 
-  /* 참고: 매일 아침 8시 자동 새로고침이나 실시간 갱신은
-     지금처럼 사용자가 브라우저를 열고 있어야만 동작하는 방식으로는 한계가 있음.
-     이건 "정해진 시간에 서버가 알아서 작업을 실행하는" 스케줄링 기능이 필요해서
-     다음 단계(자동화)에서 다룰 부분으로 남겨둠 - 지금은 카테고리 클릭 시점에 그때그때
-     최신 뉴스를 받아오고, 새로고침 버튼으로 다시 받아오는 방식까지 완성. */
+      const category = chip.getAttribute("data-category");
+      loadCategorySummary(category);
+    });
+  });
 </script>
 
 </body>
