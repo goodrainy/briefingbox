@@ -479,13 +479,19 @@
 
   .bookmark-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--color-card-bg);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 14px 16px;
+  }
+
+  .bookmark-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .bookmark-title {
@@ -509,6 +515,32 @@
 
   .bookmark-remove:hover {
     color: #d64545;
+  }
+
+  /* 찜한 기사에 남기는 간단한 메모 (blur 시 자동 저장) */
+  .bookmark-memo {
+    width: 100%;
+    min-height: 44px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .bookmark-memo:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  /* 메모 저장 직후 잠깐 색이 들어왔다가 서서히 원래대로 돌아옴 (저장됐다는 시각 피드백) */
+  .bookmark-memo.saved {
+    border-color: var(--color-primary);
+    background: #eaf1ff;
   }
 
   /* ---------- 푸터 ---------- */
@@ -771,6 +803,16 @@
     renderBookmarks();
   }
 
+  // 찜한 기사의 메모만 갱신 (목록 전체를 다시 그리지 않아요 - 타이핑 중 포커스가 날아가지 않도록)
+  function updateBookmarkMemo(url, memoText) {
+    const bookmarks = getBookmarks();
+    const target = bookmarks.find((bookmark) => bookmark.url === url);
+    if (!target) return;
+
+    target.memo = memoText;
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
+  }
+
   // 저장된 찜 목록을 "내가 찜한 뉴스" 섹션에 그려주는 함수
   function renderBookmarks() {
     const bookmarks = getBookmarks();
@@ -789,6 +831,9 @@
       const row = document.createElement("div");
       row.className = "bookmark-item";
 
+      const top = document.createElement("div");
+      top.className = "bookmark-item-top";
+
       const link = document.createElement("a");
       link.className = "bookmark-title";
       link.href = bookmark.url;
@@ -803,8 +848,22 @@
       removeBtn.textContent = "✕";
       removeBtn.addEventListener("click", () => removeBookmark(bookmark.url));
 
-      row.appendChild(link);
-      row.appendChild(removeBtn);
+      top.appendChild(link);
+      top.appendChild(removeBtn);
+
+      // 간단 메모 입력창: 다른 곳을 클릭해서 포커스를 벗어나는 순간(blur) 자동 저장돼요.
+      const memoBox = document.createElement("textarea");
+      memoBox.className = "bookmark-memo";
+      memoBox.placeholder = "간단한 메모를 남겨보세요 (왜 저장했는지, 나중에 확인할 점 등)";
+      memoBox.value = bookmark.memo || "";
+      memoBox.addEventListener("blur", () => {
+        updateBookmarkMemo(bookmark.url, memoBox.value);
+        memoBox.classList.add("saved");
+        setTimeout(() => memoBox.classList.remove("saved"), 1000);
+      });
+
+      row.appendChild(top);
+      row.appendChild(memoBox);
       bookmarkList.appendChild(row);
     });
   }
@@ -888,7 +947,7 @@
       // 처음 펼칠 때 찜 목록에 추가 (이미 찜한 기사면 중복 저장되지 않아요)
       if (!card.classList.contains("selected")) {
         card.classList.add("selected");
-        addBookmark({ title, url });
+        addBookmark({ title, url, memo: "" });
       }
 
       relatedPanel.hidden = false;
