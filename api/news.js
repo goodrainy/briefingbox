@@ -35,15 +35,17 @@ export default async function handler(req, res) {
   }
 
   // sort=date: 최신순 정렬
-  const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(
+  // 주의: 이 프로젝트는 "NAVER API HUB"(console.ncloud.com)에서 발급받은 키를 사용해요.
+  // 예전 개발자센터(developers.naver.com) 방식과 주소·헤더 이름이 다릅니다.
+  const apiUrl = `https://naverapihub.apigw.ntruss.com/search/v1/news?query=${encodeURIComponent(
     query
   )}&display=${displayCount}&sort=date`;
 
   try {
     const naverResponse = await fetch(apiUrl, {
       headers: {
-        "X-Naver-Client-Id": clientId,
-        "X-Naver-Client-Secret": clientSecret,
+        "X-NCP-APIGW-API-KEY-ID": clientId,
+        "X-NCP-APIGW-API-KEY": clientSecret,
       },
     });
 
