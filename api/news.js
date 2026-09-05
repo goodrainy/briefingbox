@@ -8,8 +8,10 @@
 
 export default async function handler(req, res) {
   // query: 검색어 (카테고리명이든, 기사 제목 전체든 그냥 검색어로 받으면 됩니다)
-  // display: 가져올 기사 개수 (안 보내면 5개, 최대 10개로 제한)
-  const { query, display } = req.query; // 예: /api/news?query=경제&display=4
+  // display: 가져올 기사 개수 (안 보내면 5개, 최대 30개로 제한)
+  // - "핫한 기사" 골라내기 기능이 여러 기사를 비교해서 골라야 해서, 카테고리 요약 화면에서는
+  //   더 큰 후보군(예: 20개)을 요청한 뒤 그중 화제성 높은 기사만 추려서 보여줘요.
+  const { query, display } = req.query; // 예: /api/news?query=경제&display=20
 
   if (!query) {
     res.status(400).json({ error: "검색어(query)가 필요합니다." });
@@ -19,8 +21,8 @@ export default async function handler(req, res) {
   let displayCount = parseInt(display, 10);
   if (!Number.isInteger(displayCount) || displayCount < 1) {
     displayCount = 5;
-  } else if (displayCount > 10) {
-    displayCount = 10;
+  } else if (displayCount > 30) {
+    displayCount = 30;
   }
 
   // Vercel 프로젝트 설정 > Environment Variables 에 등록해둔 값을 읽어옵니다.
