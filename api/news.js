@@ -1,78 +1,64 @@
-// api/news.js
-//
-// 이 파일이 하는 일: 브라우저(index.html)가 직접 네이버 API를 부르면
-// Client ID/Secret이 노출되니까, 대신 이 서버 함수가 네이버 API를 불러주고
-// 그 결과만 브라우저에게 돌려줌.
-//
-// 브라우저 입장에서는 "/api/news?category=ai" 같은 우리 집 주소만 알면 되고,
-// 네이버 API 주소나 비밀 키는 전혀 몰라도 됨 (이게 이 파일의 핵심 역할).
-
-// 카테고리별로 네이버에 어떤 단어로 검색할지 미리 정해둠
-// 나중에 검색어를 바꾸고 싶으면 이 표만 수정하면 됨
-const CATEGORY_QUERY = {
-  ai: "인공지능",
-  econ: "경제 경영",
-  money: "재테크 투자"
-};
+// ===============================
+// 네이버 뉴스 검색 API 중계(프록시) 함수
+// - 브라우저가 이 주소(/api/news)로 요청을 보내면,
+//   이 함수가 대신 네이버 서버에 요청을 보내고 결과만 돌려줍니다.
+// - 네이버 Client ID / Secret은 절대 프론트엔드(HTML/JS)에 적지 않고,
+//   Vercel의 "환경 변수(Environment Variables)"에만 저장해서 이 함수에서만 사용합니다.
+// ===============================
 
 export default async function handler(req, res) {
-  const category = req.query.category || "ai";
-  const query = CATEGORY_QUERY[category] || CATEGORY_QUERY.ai;
+  // query: 검색어 (카테고리명이든, 기사 제목 전체든 그냥 검색어로 받으면 됩니다)
+  // display: 가져올 기사 개수 (안 보내면 5개, 최대 10개로 제한)
+  const { query, display } = req.query; // 예: /api/news?query=경제&display=4
 
-  // 여기 두 값은 코드에 직접 쓰지 않고, Vercel의 "환경변수" 설정에 등록해둔 값을 불러옴
-  // (Vercel 프로젝트 설정 → Environment Variables 에서
-  //  NAVER_CLIENT_ID, NAVER_CLIENT_SECRET 이름으로 등록하면 됨)
+  if (!query) {
+    res.status(400).json({ error: "검색어(query)가 필요합니다." });
+    return;
+  }
+
+  let displayCount = parseInt(display, 10);
+  if (!Number.isInteger(displayCount) || displayCount < 1) {
+    displayCount = 5;
+  } else if (displayCount > 10) {
+    displayCount = 10;
+  }
+
+  // Vercel 프로젝트 설정 > Environment Variables 에 등록해둔 값을 읽어옵니다.
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    // 아직 환경변수를 등록 안 했을 때 나오는 안내 메시지
-    return res.status(500).json({
-      error: "NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수가 설정되지 않았어요. Vercel 프로젝트 설정에서 등록해주세요."
+    res.status(500).json({
+      error: "네이버 API 키가 설정되지 않았습니다. Vercel 환경 변수를 확인하세요.",
     });
+    return;
   }
+
+  // sort=date: 최신순 정렬
+  const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(
+    query
+  )}&display=${displayCount}&sort=date`;
 
   try {
-    // 네이버 뉴스 검색 API를 서버 쪽에서 대신 호출
-    // (NAVER API HUB로 이관된 새 주소/헤더 형식 사용)
-    const naverUrl = `https://naverapihub.apigw.ntruss.com/search/v1/news?query=${encodeURIComponent(query)}&display=10&sort=date`;
-
-    const naverRes = await fetch(naverUrl, {
+    const naverResponse = await fetch(apiUrl, {
       headers: {
-        "X-NCP-APIGW-API-KEY-ID": clientId,
-        "X-NCP-APIGW-API-KEY": clientSecret
-      }
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
     });
 
-    if (!naverRes.ok) {
-      throw new Error(`네이버 API 응답 오류: ${naverRes.status}`);
+    const data = await naverResponse.json();
+
+    if (!naverResponse.ok) {
+      // 네이버 쪽에서 에러가 온 경우 (키 오류, 요청 한도 초과 등) 그대로 전달
+      res
+        .status(naverResponse.status)
+        .json({ error: data.errorMessage || "네이버 API 요청에 실패했습니다." });
+      return;
     }
 
-    const data = await naverRes.json();
-
-    // 네이버가 주는 데이터를 우리 화면(index.html)이 쓰기 편한 형태로 살짝 정리
-    // (title/link에 남아있는 <b> 태그 같은 HTML 표시 제거)
-    const articles = data.items.map(item => ({
-      title: stripHtml(item.title),
-      summary: stripHtml(item.description),
-      category: category,
-      date: (item.pubDate || "").slice(0, 16), // 날짜 앞부분만 간단히 사용
-      link: item.originallink || item.link
-    }));
-
-    res.status(200).json({ articles });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "뉴스를 불러오는 중 문제가 발생했어요." });
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: "서버에서 뉴스를 불러오는 중 오류가 발생했습니다." });
   }
-}
-
-// 네이버 응답에 섞여있는 <b>, &quot; 같은 HTML 조각을 제거하는 작은 도우미 함수
-function stripHtml(text){
-  return (text || "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;/g, "'");
 }
