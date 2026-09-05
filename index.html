@@ -83,9 +83,22 @@
     font-size: 1.6rem;
   }
 
-  header nav span {
+  /* 헤더 오른쪽의 화면 모드 전환 셀렉트 (뉴스한입 ↔ 사회 뉴스로 보는 주식) */
+  .mode-select {
+    font-family: inherit;
     font-size: 0.85rem;
+    font-weight: 600;
     color: var(--color-text-light);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+
+  .mode-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
   }
 
   /* ---------- 히어로(첫 화면 메인) 영역 ---------- */
@@ -543,6 +556,132 @@
     background: #eaf1ff;
   }
 
+  /* ---------- 사회 뉴스로 보는 주식 (신규, UI 우선 구성) ---------- */
+  .stock-section {
+    background: #fff;
+    padding: 60px 6% 80px;
+  }
+
+  .stock-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .stock-inner h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .stock-inner .sub {
+    color: var(--color-text-light);
+    margin-bottom: 28px;
+    font-size: 0.95rem;
+  }
+
+  .stock-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  #stock-input {
+    flex: 1;
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 12px 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+  }
+
+  #stock-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  #stock-add-btn {
+    flex-shrink: 0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  #stock-add-btn:hover {
+    background: var(--color-primary-dark);
+  }
+
+  .stock-empty {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+  }
+
+  .stock-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    text-align: left;
+  }
+
+  .stock-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .stock-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stock-name-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stock-name {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  /* 주가 데이터는 아직 연동 전이라, 준비 중임을 알리는 자리표시자 배지예요 */
+  .stock-price-placeholder {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+    background: var(--color-card-bg);
+    border: 1px dashed var(--color-border);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  .stock-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .stock-remove:hover {
+    color: #d64545;
+  }
+
   /* ---------- 푸터 ---------- */
   footer {
     text-align: center;
@@ -572,8 +711,9 @@
       padding: 16px 5%;
     }
 
-    header nav span {
-      display: none; /* 모바일에서는 우측 안내 문구 숨김 */
+    .mode-select {
+      font-size: 0.78rem;
+      padding: 6px 10px;
     }
   }
 </style>
@@ -587,9 +727,16 @@
       <span>뉴스한입</span>
     </div>
     <nav>
-      <span>바쁜 당신을 위한 뉴스 요약</span>
+      <!-- 화면 모드 전환: "뉴스한입"(기존 뉴스 요약)과 "사회 뉴스로 보는 주식"(신규, UI만 우선 구성)을 오갈 수 있어요 -->
+      <select id="mode-select" class="mode-select">
+        <option value="news">바쁜 당신을 위한 뉴스 요약</option>
+        <option value="stock">사회 뉴스로 보는 주식</option>
+      </select>
     </nav>
   </header>
+
+  <!-- ================= "뉴스한입" 모드 전체 (기존 화면) ================= -->
+  <div id="news-mode">
 
   <!-- ================= 히어로 섹션: 큰 제목 + 문제 설명 + CTA 버튼 ================= -->
   <section class="hero">
@@ -683,6 +830,34 @@
     </div>
   </section>
 
+  </div>
+  <!-- ================= "뉴스한입" 모드 끝 ================= -->
+
+  <!-- ================= "사회 뉴스로 보는 주식" 모드 (신규, 우선 UI만 구성 - 주가 데이터 연동은 다음 단계) ================= -->
+  <section class="stock-section" id="stock-mode" hidden>
+    <div class="stock-inner">
+      <h2>사회 뉴스로 보는 주식</h2>
+      <p class="sub">
+        관심 종목을 등록하면 관련 뉴스를 모아 보여드려요.
+        <br />(주가 데이터 연동은 다음 단계에서 준비 중이에요)
+      </p>
+
+      <!-- 종목 등록 입력창 -->
+      <div class="stock-input-row">
+        <input type="text" id="stock-input" placeholder="예: 삼성전자" />
+        <button type="button" id="stock-add-btn">등록</button>
+      </div>
+
+      <!-- 등록한 종목이 없을 때 보여주는 안내 문구 -->
+      <p class="stock-empty" id="stock-empty">
+        아직 등록한 종목이 없어요. 위에서 관심 종목을 등록해보세요.
+      </p>
+
+      <!-- 등록한 종목 카드 목록 -->
+      <div class="stock-list" id="stock-list"></div>
+    </div>
+  </section>
+
   <!-- ================= 푸터 ================= -->
   <footer>
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
@@ -710,6 +885,19 @@
   const preview = document.getElementById("summary-preview");
   const summaryTitle = document.getElementById("summary-title");
   const summaryList = document.getElementById("summary-list");
+
+  // ===============================
+  // 화면 모드 전환: "뉴스한입" ↔ "사회 뉴스로 보는 주식"
+  // ===============================
+  const modeSelect = document.getElementById("mode-select");
+  const newsModeEl = document.getElementById("news-mode");
+  const stockModeEl = document.getElementById("stock-mode");
+
+  modeSelect.addEventListener("change", () => {
+    const isStockMode = modeSelect.value === "stock";
+    newsModeEl.hidden = isStockMode;
+    stockModeEl.hidden = !isStockMode;
+  });
 
   // 네이버 API가 돌려주는 제목에는 <b>강조</b> 태그와 &quot; 같은 특수문자 코드가
   // 섞여 있어서, 화면에 깔끔한 글자로 보여주기 위해 정리하는 함수예요.
@@ -746,6 +934,58 @@
     const uniqueWords = [...new Set(words)];
 
     return uniqueWords.sort((a, b) => b.length - a.length).slice(0, count);
+  }
+
+  // ===============================
+  // "핫한 기사" 골라내기 (AI 없이, 간단한 규칙으로만 판단해요)
+  //
+  // 네이버 뉴스 검색 API에는 조회수·공유수 같은 "인기도" 정보가 없어요.
+  // 그래서 대신 "오늘 기사인지" + "여러 언론사가 동시에 같은 주제를 다루고 있는지"를
+  // 화제성의 대리 지표로 사용합니다. 여러 기사가 서로 키워드를 공유할수록
+  // = 같은 사안을 여러 곳에서 동시에 보도하고 있다는 뜻이므로, 화제성이 높다고 봐요.
+  // ===============================
+  function isPublishedToday(pubDateStr) {
+    if (!pubDateStr) return false;
+
+    const pubDate = new Date(pubDateStr);
+    if (Number.isNaN(pubDate.getTime())) return false;
+
+    const today = new Date();
+    return (
+      pubDate.getFullYear() === today.getFullYear() &&
+      pubDate.getMonth() === today.getMonth() &&
+      pubDate.getDate() === today.getDate()
+    );
+  }
+
+  function pickHotArticles(items, count = 5) {
+    // 1) 오늘 발행된 기사를 우선 후보로 삼되, 오늘 기사가 너무 적으면(예: 새벽 시간대)
+    //    전체 기사를 대상으로 다시 판단합니다.
+    const todayItems = items.filter((item) => isPublishedToday(item.pubDate));
+    const pool = todayItems.length >= 3 ? todayItems : items;
+
+    // 2) 기사별로 키워드를 미리 뽑아둡니다.
+    const withKeywords = pool.map((item) => ({
+      item,
+      keywords: extractKeywords(cleanText(item.title)),
+    }));
+
+    // 3) 서로 키워드를 공유하는 다른 기사가 몇 개나 있는지 세어서 "동시 보도 점수"로 사용합니다.
+    const scored = withKeywords.map((entry, idx) => {
+      let overlapScore = 0;
+      withKeywords.forEach((other, otherIdx) => {
+        if (idx === otherIdx) return;
+        const sharesKeyword = entry.keywords.some((k) => other.keywords.includes(k));
+        if (sharesKeyword) overlapScore += 1;
+      });
+      return { item: entry.item, overlapScore };
+    });
+
+    // 4) 점수가 높은(=여러 곳에서 동시에 다루는) 기사 순으로 정렬해서 상위 N개만 사용
+    return scored
+      .sort((a, b) => b.overlapScore - a.overlapScore)
+      .slice(0, count)
+      .map((entry) => entry.item);
   }
 
   // ===============================
@@ -867,6 +1107,136 @@
       bookmarkList.appendChild(row);
     });
   }
+
+  // ===============================
+  // 사회 뉴스로 보는 주식 (신규 - 관심 종목 등록은 실제로 동작하고,
+  // 관련 뉴스도 실제 검색 결과를 보여줘요. 주가 데이터만 다음 단계에서 연동할 예정이라
+  // 지금은 "주가 연동 예정" 자리표시자만 보여줍니다.)
+  // 종목 목록도 찜 목록과 마찬가지로 로그인 없이 이 브라우저의 localStorage에만 저장돼요.
+  // ===============================
+  const STOCK_KEY = "newsBiteStocks";
+
+  function getStocks() {
+    try {
+      return JSON.parse(localStorage.getItem(STOCK_KEY)) || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function addStock(name) {
+    const stocks = getStocks();
+    if (stocks.includes(name)) return; // 이미 등록된 종목이면 중복 추가하지 않음
+
+    stocks.push(name);
+    localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
+    renderStocks();
+  }
+
+  function removeStock(name) {
+    const stocks = getStocks().filter((s) => s !== name);
+    localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
+    renderStocks();
+  }
+
+  // 종목 하나를 받아서 "종목명 + 주가 자리표시자 + 관련 뉴스 보기" 카드를 만드는 함수
+  function createStockCard(stockName) {
+    const card = document.createElement("div");
+    card.className = "stock-card";
+
+    const top = document.createElement("div");
+    top.className = "stock-card-top";
+
+    const nameGroup = document.createElement("div");
+    nameGroup.className = "stock-name-group";
+    nameGroup.innerHTML = `
+      <span class="stock-name">${stockName}</span>
+      <span class="stock-price-placeholder">주가 연동 예정</span>
+    `;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "stock-remove";
+    removeBtn.title = "종목 삭제";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => removeStock(stockName));
+
+    top.appendChild(nameGroup);
+    top.appendChild(removeBtn);
+
+    // 관련 뉴스 보기 버튼: 기존 "더 보기"와 같은 방식으로 실제 뉴스를 검색해서 보여줘요.
+    const newsBtn = document.createElement("button");
+    newsBtn.type = "button";
+    newsBtn.className = "more-btn";
+    newsBtn.textContent = "📰 관련 뉴스 보기";
+
+    const relatedPanel = document.createElement("div");
+    relatedPanel.className = "related-panel";
+    relatedPanel.hidden = true;
+
+    let loaded = false;
+
+    newsBtn.addEventListener("click", () => {
+      const isOpen = !relatedPanel.hidden;
+
+      if (isOpen) {
+        relatedPanel.hidden = true;
+        newsBtn.textContent = "📰 관련 뉴스 보기";
+        return;
+      }
+
+      relatedPanel.hidden = false;
+      newsBtn.textContent = "📰 관련 뉴스 접기";
+
+      if (!loaded) {
+        loadRelatedArticles(stockName, relatedPanel);
+        loaded = true;
+      }
+    });
+
+    card.appendChild(top);
+    card.appendChild(newsBtn);
+    card.appendChild(relatedPanel);
+    return card;
+  }
+
+  function renderStocks() {
+    const stocks = getStocks();
+    const stockList = document.getElementById("stock-list");
+    const emptyMessage = document.getElementById("stock-empty");
+
+    stockList.innerHTML = "";
+
+    if (stocks.length === 0) {
+      emptyMessage.hidden = false;
+      return;
+    }
+    emptyMessage.hidden = true;
+
+    stocks.forEach((name) => {
+      stockList.appendChild(createStockCard(name));
+    });
+  }
+
+  // 종목 등록 입력창 + 등록 버튼 연결
+  const stockInput = document.getElementById("stock-input");
+  const stockAddBtn = document.getElementById("stock-add-btn");
+
+  function submitStockInput() {
+    const name = stockInput.value.trim();
+    if (!name) return;
+
+    addStock(name);
+    stockInput.value = "";
+  }
+
+  stockAddBtn.addEventListener("click", submitStockInput);
+  stockInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitStockInput();
+    }
+  });
 
   // 기사 하나(item)를 받아서, "제목 줄 + 발행시각 + 키워드 + 관심있어요 버튼 + 관련 기사 목록" 카드를 만드는 함수
   function createNewsCard(item) {
@@ -1021,8 +1391,9 @@
     try {
       // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
       // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
+      // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로, 20개를 넉넉히 받아옵니다.
       const query = categoryQueryMap[category];
-      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=20`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -1034,10 +1405,13 @@
         return;
       }
 
+      // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
+      const hotItems = pickHotArticles(data.items, 5);
+
       summaryTitle.textContent = `오늘의 ${category} 이슈 요약`;
 
       // 뉴스 하나하나를 "더 보기"가 달린 카드로 만들어서 목록에 추가
-      data.items.forEach((item) => {
+      hotItems.forEach((item) => {
         summaryList.appendChild(createNewsCard(item));
       });
     } catch (error) {
@@ -1057,8 +1431,9 @@
     });
   });
 
-  // 페이지를 열자마자, 이전에 저장해둔 찜 목록을 화면에 보여줍니다.
+  // 페이지를 열자마자, 이전에 저장해둔 찜 목록 / 관심 종목 목록을 화면에 보여줍니다.
   renderBookmarks();
+  renderStocks();
 </script>
 
 </body>
