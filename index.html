@@ -309,14 +309,45 @@
     margin-bottom: 14px;
   }
 
-  /* 요약 카드 하나 = 제목 한 줄 + "더 보기" 버튼 + (펼쳤을 때) 관련 기사 목록 */
+  /* 요약 카드 하나 = 제목 한 줄 + 키워드 + "관심있어요" 버튼 + (펼쳤을 때) 관련 기사 목록 */
   .news-card {
     padding: 12px 0;
     border-bottom: 1px dashed var(--color-border);
+    border-radius: 10px;
+    transition: background 0.15s ease;
   }
 
   .news-card:last-child {
     border-bottom: none;
+  }
+
+  /* 관심있어요를 눌러 선택된 카드는 은은하게 배경을 강조 */
+  .news-card.selected {
+    background: #eaf1ff;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* 제목 아래 키워드 칩들을 나열하는 줄 */
+  .keyword-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    padding-left: 18px; /* 위 제목의 불릿(•)과 살짝 맞춰서 정렬 */
+  }
+
+  .keyword-chip {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    background: #eaf1ff;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  .news-card.selected .keyword-chip {
+    background: #fff;
   }
 
   .news-card-header {
@@ -574,16 +605,42 @@
       .replace(/&#39;/g, "'");
   }
 
-  // 기사 하나(item)를 받아서, "제목 줄 + 더 보기 버튼 + 관련 기사 목록" 카드를 만드는 함수
+  // ===============================
+  // 키워드 추출 (AI 없이, 간단한 규칙으로만 뽑아요)
+  // - 제목에서 문장부호를 지우고 띄어쓰기 단위로 나눈 뒤,
+  // - 뉴스 제목에 자주 붙는 의미 없는 표현(속보, 단독 등)을 걸러내고,
+  // - 남은 단어 중 "글자 수가 긴 단어일수록 핵심 단어일 가능성이 높다"고 보고
+  //   가장 긴 단어 2~3개를 키워드로 사용합니다.
+  // 완벽한 방식은 아니지만, 별도 AI 호출 없이 비용 없이 동작해요.
+  // ===============================
+  const NEWS_STOPWORDS = new Set([
+    "오늘", "내일", "어제", "지금", "현재", "오전", "오후",
+    "속보", "단독", "종합", "인터뷰", "포토", "영상", "전문",
+    "이번", "다시", "한편", "관련", "위해", "통해",
+  ]);
+
+  function extractKeywords(title, count = 3) {
+    const words = title
+      .replace(/[^\p{L}\p{N}\s]/gu, " ") // 문장부호 제거, 한글/영문/숫자만 남기기
+      .split(/\s+/)
+      .filter((w) => w.length >= 2 && !NEWS_STOPWORDS.has(w));
+
+    const uniqueWords = [...new Set(words)];
+
+    return uniqueWords.sort((a, b) => b.length - a.length).slice(0, count);
+  }
+
+  // 기사 하나(item)를 받아서, "제목 줄 + 키워드 + 관심있어요 버튼 + 관련 기사 목록" 카드를 만드는 함수
   function createNewsCard(item) {
     const title = cleanText(item.title);
     // originallink(언론사 원문)가 있으면 그걸 쓰고, 없으면 네이버 뉴스 링크(link)를 사용
     const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
+    const keywords = extractKeywords(title);
 
     const card = document.createElement("div");
     card.className = "news-card";
 
-    // 제목 줄 + 더 보기 버튼을 담는 헤더
+    // 제목 줄 + 관심있어요 버튼을 담는 헤더
     const header = document.createElement("div");
     header.className = "news-card-header";
 
@@ -594,15 +651,26 @@
     titleLink.rel = "noopener noreferrer";
     titleLink.innerHTML = `<span class="bullet">•</span><span>${title}</span>`;
 
+    // "마음에 드는 기사 선택" 버튼: 누르면 관련 기사를 찾아서 보여줌 (다시 누르면 접힘)
     const moreBtn = document.createElement("button");
     moreBtn.type = "button";
     moreBtn.className = "more-btn";
-    moreBtn.textContent = "더 보기 ▾";
+    moreBtn.textContent = "🤍 관심있어요";
 
     header.appendChild(titleLink);
     header.appendChild(moreBtn);
 
-    // 더 보기를 누르면 펼쳐지는 관련 기사 영역 (처음엔 숨김)
+    // 제목 아래 키워드 칩 목록
+    const keywordRow = document.createElement("div");
+    keywordRow.className = "keyword-row";
+    keywords.forEach((keyword) => {
+      const chip = document.createElement("span");
+      chip.className = "keyword-chip";
+      chip.textContent = `#${keyword}`;
+      keywordRow.appendChild(chip);
+    });
+
+    // 관심있어요를 누르면 펼쳐지는 관련 기사 영역 (처음엔 숨김)
     const relatedPanel = document.createElement("div");
     relatedPanel.className = "related-panel";
     relatedPanel.hidden = true;
@@ -613,34 +681,39 @@
       const isOpen = !relatedPanel.hidden;
 
       if (isOpen) {
-        // 이미 펼쳐진 상태라면 다시 눌렀을 때 접기
+        // 이미 펼쳐진(선택된) 상태라면 다시 눌렀을 때 선택 해제 + 접기
         relatedPanel.hidden = true;
-        moreBtn.textContent = "더 보기 ▾";
+        moreBtn.textContent = "🤍 관심있어요";
+        card.classList.remove("selected");
         return;
       }
 
       relatedPanel.hidden = false;
-      moreBtn.textContent = "접기 ▴";
+      moreBtn.textContent = "❤️ 관련기사 접기";
+      card.classList.add("selected");
 
       if (!loaded) {
-        loadRelatedArticles(title, relatedPanel);
+        // 키워드가 있으면 키워드로, 없으면 제목 전체로 검색
+        const searchQuery = keywords.length > 0 ? keywords.join(" ") : title;
+        loadRelatedArticles(searchQuery, relatedPanel);
         loaded = true;
       }
     });
 
     card.appendChild(header);
+    card.appendChild(keywordRow);
     card.appendChild(relatedPanel);
     return card;
   }
 
-  // 기사 제목 전체를 검색어로 사용해서, 관련 기사 3~4개를 불러와 패널에 채워 넣는 함수
+  // 검색어(키워드 또는 제목)를 받아서, 관련 기사 3~4개를 불러와 패널에 채워 넣는 함수
   // (AI 요약 없이, 네이버 검색 결과를 제목 + 스니펫 + 원문 링크 형태로 그대로 보여줌)
-  async function loadRelatedArticles(searchTitle, panelElement) {
+  async function loadRelatedArticles(searchQuery, panelElement) {
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
       const response = await fetch(
-        `/api/news?query=${encodeURIComponent(searchTitle)}&display=4`
+        `/api/news?query=${encodeURIComponent(searchQuery)}&display=4`
       );
       const data = await response.json();
 
