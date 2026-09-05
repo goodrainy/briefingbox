@@ -350,6 +350,13 @@
     background: #fff;
   }
 
+  /* 발행 시각 표시 (예: "3시간 전") */
+  .pub-time {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+    padding: 3px 0;
+  }
+
   .news-card-header {
     display: flex;
     align-items: center;
@@ -405,6 +412,11 @@
     gap: 14px;
   }
 
+  /* hidden 속성이 켜져 있을 땐 위 display:flex보다 이 규칙이 우선 적용되어 확실히 숨겨짐 */
+  .related-panel[hidden] {
+    display: none;
+  }
+
   .related-item {
     font-size: 0.86rem;
   }
@@ -434,6 +446,69 @@
   .summary-status {
     font-size: 0.85rem;
     color: var(--color-text-light);
+  }
+
+  /* ---------- 찜한 뉴스 섹션 (localStorage에 저장, 회원가입 없이 브라우저에만 보관) ---------- */
+  .bookmark-section {
+    background: var(--color-bg);
+    padding: 50px 6% 70px;
+  }
+
+  .bookmark-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .bookmark-inner h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .bookmark-empty {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+  }
+
+  .bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .bookmark-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .bookmark-title {
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  .bookmark-title:hover {
+    color: var(--color-primary);
+  }
+
+  .bookmark-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .bookmark-remove:hover {
+    color: #d64545;
   }
 
   /* ---------- 푸터 ---------- */
@@ -565,6 +640,17 @@
     </div>
   </section>
 
+  <!-- ================= 찜한 뉴스 섹션 (회원가입 없이 브라우저에만 저장) ================= -->
+  <section class="bookmark-section">
+    <div class="bookmark-inner">
+      <h2>내가 찜한 뉴스</h2>
+      <p class="bookmark-empty" id="bookmark-empty">
+        아직 찜한 뉴스가 없어요. 마음에 드는 기사에서 "관심있어요"를 눌러보세요.
+      </p>
+      <div class="bookmark-list" id="bookmark-list"></div>
+    </div>
+  </section>
+
   <!-- ================= 푸터 ================= -->
   <footer>
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
@@ -630,12 +716,106 @@
     return uniqueWords.sort((a, b) => b.length - a.length).slice(0, count);
   }
 
-  // 기사 하나(item)를 받아서, "제목 줄 + 키워드 + 관심있어요 버튼 + 관련 기사 목록" 카드를 만드는 함수
+  // ===============================
+  // 네이버 API가 주는 pubDate(발행 시각)를 "3시간 전" 같은 읽기 쉬운 문구로 바꿔주는 함수
+  // ===============================
+  function formatPubDate(pubDateStr) {
+    if (!pubDateStr) return "";
+
+    const pubDate = new Date(pubDateStr);
+    if (Number.isNaN(pubDate.getTime())) return "";
+
+    const diffMin = Math.floor((Date.now() - pubDate.getTime()) / 60000);
+
+    if (diffMin < 1) return "방금 전";
+    if (diffMin < 60) return `${diffMin}분 전`;
+
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}시간 전`;
+
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay < 7) return `${diffDay}일 전`;
+
+    return `${pubDate.getMonth() + 1}월 ${pubDate.getDate()}일`;
+  }
+
+  // ===============================
+  // 찜한 뉴스 저장 (로그인 없이, 이 브라우저의 localStorage에만 저장됩니다)
+  // ===============================
+  const BOOKMARK_KEY = "newsBiteBookmarks";
+
+  function getBookmarks() {
+    try {
+      return JSON.parse(localStorage.getItem(BOOKMARK_KEY)) || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function isBookmarked(url) {
+    return getBookmarks().some((bookmark) => bookmark.url === url);
+  }
+
+  function addBookmark(newBookmark) {
+    const bookmarks = getBookmarks();
+    if (bookmarks.some((bookmark) => bookmark.url === newBookmark.url)) return;
+
+    bookmarks.unshift(newBookmark); // 최근 찜한 기사가 맨 위로 오도록
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
+    renderBookmarks();
+  }
+
+  function removeBookmark(url) {
+    const bookmarks = getBookmarks().filter((bookmark) => bookmark.url !== url);
+    localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
+    renderBookmarks();
+  }
+
+  // 저장된 찜 목록을 "내가 찜한 뉴스" 섹션에 그려주는 함수
+  function renderBookmarks() {
+    const bookmarks = getBookmarks();
+    const bookmarkList = document.getElementById("bookmark-list");
+    const emptyMessage = document.getElementById("bookmark-empty");
+
+    bookmarkList.innerHTML = "";
+
+    if (bookmarks.length === 0) {
+      emptyMessage.hidden = false;
+      return;
+    }
+    emptyMessage.hidden = true;
+
+    bookmarks.forEach((bookmark) => {
+      const row = document.createElement("div");
+      row.className = "bookmark-item";
+
+      const link = document.createElement("a");
+      link.className = "bookmark-title";
+      link.href = bookmark.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = bookmark.title;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "bookmark-remove";
+      removeBtn.title = "찜 해제";
+      removeBtn.textContent = "✕";
+      removeBtn.addEventListener("click", () => removeBookmark(bookmark.url));
+
+      row.appendChild(link);
+      row.appendChild(removeBtn);
+      bookmarkList.appendChild(row);
+    });
+  }
+
+  // 기사 하나(item)를 받아서, "제목 줄 + 발행시각 + 키워드 + 관심있어요 버튼 + 관련 기사 목록" 카드를 만드는 함수
   function createNewsCard(item) {
     const title = cleanText(item.title);
     // originallink(언론사 원문)가 있으면 그걸 쓰고, 없으면 네이버 뉴스 링크(link)를 사용
     const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
     const keywords = extractKeywords(title);
+    const pubTimeText = formatPubDate(item.pubDate);
 
     const card = document.createElement("div");
     card.className = "news-card";
@@ -651,18 +831,34 @@
     titleLink.rel = "noopener noreferrer";
     titleLink.innerHTML = `<span class="bullet">•</span><span>${title}</span>`;
 
-    // "마음에 드는 기사 선택" 버튼: 누르면 관련 기사를 찾아서 보여줌 (다시 누르면 접힘)
+    // "마음에 드는 기사 선택" 버튼: 처음 누르면 찜 목록에 저장하면서 관련 기사를 보여주고,
+    // 다시 누르면 찜은 유지한 채 관련 기사 영역만 접힙니다.
     const moreBtn = document.createElement("button");
     moreBtn.type = "button";
     moreBtn.className = "more-btn";
-    moreBtn.textContent = "🤍 관심있어요";
+
+    // 이 기사가 이미 찜한 기사라면, 카드를 열자마자 찜 표시가 되어 있도록 초기 상태를 맞춰줍니다.
+    if (isBookmarked(url)) {
+      card.classList.add("selected");
+      moreBtn.textContent = "❤️ 찜한 기사 · 더 보기";
+    } else {
+      moreBtn.textContent = "🤍 관심있어요";
+    }
 
     header.appendChild(titleLink);
     header.appendChild(moreBtn);
 
-    // 제목 아래 키워드 칩 목록
+    // 제목 아래: 발행 시각 + 키워드 칩 목록
     const keywordRow = document.createElement("div");
     keywordRow.className = "keyword-row";
+
+    if (pubTimeText) {
+      const pubTimeEl = document.createElement("span");
+      pubTimeEl.className = "pub-time";
+      pubTimeEl.textContent = pubTimeText;
+      keywordRow.appendChild(pubTimeEl);
+    }
+
     keywords.forEach((keyword) => {
       const chip = document.createElement("span");
       chip.className = "keyword-chip";
@@ -678,19 +874,25 @@
     let loaded = false; // 관련 기사를 이미 한 번 불러왔는지 (중복 요청 방지용)
 
     moreBtn.addEventListener("click", () => {
-      const isOpen = !relatedPanel.hidden;
+      const isPanelOpen = !relatedPanel.hidden;
 
-      if (isOpen) {
-        // 이미 펼쳐진(선택된) 상태라면 다시 눌렀을 때 선택 해제 + 접기
+      if (isPanelOpen) {
+        // 패널만 접습니다. 이미 찜한 기사라면 찜 상태(하트, 배경색)는 그대로 유지돼요.
         relatedPanel.hidden = true;
-        moreBtn.textContent = "🤍 관심있어요";
-        card.classList.remove("selected");
+        moreBtn.textContent = card.classList.contains("selected")
+          ? "❤️ 찜한 기사 · 더 보기"
+          : "🤍 관심있어요";
         return;
+      }
+
+      // 처음 펼칠 때 찜 목록에 추가 (이미 찜한 기사면 중복 저장되지 않아요)
+      if (!card.classList.contains("selected")) {
+        card.classList.add("selected");
+        addBookmark({ title, url });
       }
 
       relatedPanel.hidden = false;
       moreBtn.textContent = "❤️ 관련기사 접기";
-      card.classList.add("selected");
 
       if (!loaded) {
         // 키워드가 있으면 키워드로, 없으면 제목 전체로 검색
@@ -795,6 +997,9 @@
       loadCategorySummary(category);
     });
   });
+
+  // 페이지를 열자마자, 이전에 저장해둔 찜 목록을 화면에 보여줍니다.
+  renderBookmarks();
 </script>
 
 </body>
