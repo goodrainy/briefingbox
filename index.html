@@ -1209,13 +1209,24 @@
 
     stocks.push(name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
-    renderStocks();
+
+    // 전체 목록을 다시 그리지 않고, 새로 등록한 종목 카드 1개만 추가해요.
+    // (그래야 이미 불러온 다른 종목들의 주가를 불필요하게 다시 요청하지 않아요)
+    document.getElementById("stock-empty").hidden = true;
+    document.getElementById("stock-list").appendChild(createStockCard(name));
   }
 
   function removeStock(name) {
     const stocks = getStocks().filter((s) => s !== name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
-    renderStocks();
+
+    // 전체를 다시 그리지 않고, 삭제한 종목의 카드 하나만 화면에서 제거해요.
+    const card = document.querySelector(`.stock-card[data-stock-name="${CSS.escape(name)}"]`);
+    if (card) card.remove();
+
+    if (stocks.length === 0) {
+      document.getElementById("stock-empty").hidden = false;
+    }
   }
 
   // KRX API가 주는 숫자 문자열(콤마 포함 가능)을 화면에 보기 좋게 표시하는 함수
@@ -1263,6 +1274,7 @@
   function createStockCard(stockName) {
     const card = document.createElement("div");
     card.className = "stock-card";
+    card.dataset.stockName = stockName; // 삭제할 때 이 카드만 정확히 찾아 지우기 위한 표시
 
     const top = document.createElement("div");
     top.className = "stock-card-top";
