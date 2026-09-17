@@ -70,7 +70,6 @@
     z-index: 10;
   }
 
-  /* 로고를 버튼으로 만들어서 클릭하면 홈으로 이동하게 했어요. 버튼 기본 테두리/배경은 지우고 기존 로고 모양은 그대로 유지 */
   .logo {
     display: flex;
     align-items: center;
@@ -78,86 +77,28 @@
     font-size: 1.3rem;
     font-weight: 800;
     color: var(--color-primary-dark);
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-family: "Do Hyeon", "Noto Sans KR", sans-serif;
   }
 
   .logo .logo-icon {
     font-size: 1.6rem;
   }
 
-  /* 헤더 오른쪽의 빠른 이동 링크 (아래 모드 선택 카드와 같은 곳으로 이동해요) */
-  .header-nav {
-    display: flex;
-    gap: 20px;
-  }
-
-  .nav-link {
+  /* 헤더 오른쪽의 화면 모드 전환 셀렉트 (뉴스한입 ↔ 사회 뉴스로 보는 주식) */
+  .mode-select {
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--color-text-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px 4px;
-    transition: color 0.15s ease;
-  }
-
-  .nav-link:hover {
-    color: var(--color-primary);
-  }
-
-  /* ---------- 모드 선택 카드 (홈 화면에서 뉴스/주식 중 고르는 부분) ---------- */
-  .mode-picker {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 6% 70px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-
-  .mode-card {
-    font-family: inherit;
-    text-align: left;
-    background: var(--color-card-bg);
+    background: var(--color-bg);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding: 28px 24px;
+    border-radius: 999px;
+    padding: 7px 14px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   }
 
-  .mode-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  .mode-select:focus {
+    outline: none;
     border-color: var(--color-primary);
-  }
-
-  .mode-card-icon {
-    font-size: 2rem;
-    margin-bottom: 12px;
-  }
-
-  .mode-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-  }
-
-  .mode-card p {
-    font-size: 0.9rem;
-    color: var(--color-text-light);
-    line-height: 1.5;
-  }
-
-  @media (max-width: 700px) {
-    .mode-picker {
-      grid-template-columns: 1fr;
-    }
   }
 
   /* ---------- 히어로(첫 화면 메인) 영역 ---------- */
@@ -716,7 +657,7 @@
     font-weight: 700;
   }
 
-  /* 주가를 아직 불러오는 중이거나, 못 불러왔을 때 보여주는 배지 */
+  /* 주가 데이터는 아직 연동 전이라, 준비 중임을 알리는 자리표시자 배지예요 */
   .stock-price-placeholder {
     font-size: 0.75rem;
     font-weight: 600;
@@ -725,47 +666,6 @@
     border: 1px dashed var(--color-border);
     padding: 3px 9px;
     border-radius: 999px;
-  }
-
-  /* 실제 주가 표시: 종가 + 등락률
-     국내 증시 관례대로 상승은 빨간색, 하락은 파란색으로 표시해요 */
-  .stock-price {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: 0.85rem;
-  }
-
-  .stock-price .close-price {
-    font-weight: 700;
-    color: var(--color-text);
-  }
-
-  .stock-price .change-rate {
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
-  }
-
-  .stock-price .change-rate.up {
-    color: #d92d20;
-    background: #fdeceb;
-  }
-
-  .stock-price .change-rate.down {
-    color: #175cd3;
-    background: #eaf1ff;
-  }
-
-  .stock-price .change-rate.flat {
-    color: var(--color-text-light);
-    background: var(--color-bg);
-  }
-
-  /* 주가가 몇 월 며칠 기준인지 보여주는 작은 글자 */
-  .stock-price .base-date {
-    font-size: 0.72rem;
-    color: var(--color-text-light);
   }
 
   .stock-remove {
@@ -811,35 +711,34 @@
       padding: 16px 5%;
     }
 
-    .header-nav {
-      gap: 10px;
-    }
-
-    .nav-link {
+    .mode-select {
       font-size: 0.78rem;
-      padding: 4px;
+      padding: 6px 10px;
     }
   }
 </style>
 </head>
 <body>
 
-  <!-- ================= 헤더: 서비스 로고(홈 이동) + 빠른 이동 링크 ================= -->
+  <!-- ================= 헤더: 서비스 로고 ================= -->
   <header>
-    <button class="logo" id="logo-home-btn" type="button">
+    <div class="logo">
       <span class="logo-icon">📰</span>
       <span>뉴스한입</span>
-    </button>
-    <nav class="header-nav">
-      <button type="button" class="nav-link" data-target="news">뉴스 요약</button>
-      <button type="button" class="nav-link" data-target="stock">사회 뉴스로 보는 주식</button>
+    </div>
+    <nav>
+      <!-- 화면 모드 전환: "뉴스한입"(기존 뉴스 요약)과 "사회 뉴스로 보는 주식"(신규, UI만 우선 구성)을 오갈 수 있어요 -->
+      <select id="mode-select" class="mode-select">
+        <option value="news">바쁜 당신을 위한 뉴스 요약</option>
+        <option value="stock">사회 뉴스로 보는 주식</option>
+      </select>
     </nav>
   </header>
 
-  <!-- ================= 홈 화면: 서비스 소개 + 두 가지 모드 선택 ================= -->
-  <div id="home-mode">
+  <!-- ================= "뉴스한입" 모드 전체 (기존 화면) ================= -->
+  <div id="news-mode">
 
-  <!-- ================= 히어로 섹션: 큰 제목 + 문제 설명 ================= -->
+  <!-- ================= 히어로 섹션: 큰 제목 + 문제 설명 + CTA 버튼 ================= -->
   <section class="hero">
     <div class="hero-text">
       <span class="hero-badge">사회현상을 놓치고 싶지 않은 당신에게</span>
@@ -848,6 +747,11 @@
         하루 종일 쏟아지는 기사들, 다 챙겨 보기엔 시간이 부족하죠.
         관심 있는 분야만 골라두면, 꼭 알아야 할 소식만 짧게 정리해서 보여드려요.
       </p>
+
+      <!-- 대표 버튼: 클릭하면 아래 카테고리 선택 영역으로 이동 -->
+      <button class="cta-btn" onclick="scrollToCategory()">
+        카테고리 선택하고 시작하기 →
+      </button>
 
       <p class="hero-sub-note">회원가입 없이, 지금 바로 체험해볼 수 있어요.</p>
     </div>
@@ -868,26 +772,6 @@
       </svg>
     </div>
   </section>
-
-  <!-- ================= 모드 선택: 뉴스 요약 / 주식 중 골라서 들어가기 ================= -->
-  <section class="mode-picker">
-    <button class="mode-card" type="button" data-target="news">
-      <div class="mode-card-icon">📰</div>
-      <h3>뉴스 요약</h3>
-      <p>관심 카테고리를 골라 오늘의 핵심 뉴스만 빠르게 확인해요.</p>
-    </button>
-    <button class="mode-card" type="button" data-target="stock">
-      <div class="mode-card-icon">📈</div>
-      <h3>사회 뉴스로 보는 주식</h3>
-      <p>관심 종목의 실제 주가와 관련 뉴스를 함께 확인해요.</p>
-    </button>
-  </section>
-
-  </div>
-  <!-- ================= 홈 화면 끝 ================= -->
-
-  <!-- ================= "뉴스한입" 모드 전체 ================= -->
-  <div id="news-mode" hidden>
 
   <!-- ================= 핵심 기능 3가지 소개 ================= -->
   <section class="features">
@@ -949,12 +833,13 @@
   </div>
   <!-- ================= "뉴스한입" 모드 끝 ================= -->
 
-  <!-- ================= "사회 뉴스로 보는 주식" 모드 ================= -->
+  <!-- ================= "사회 뉴스로 보는 주식" 모드 (신규, 우선 UI만 구성 - 주가 데이터 연동은 다음 단계) ================= -->
   <section class="stock-section" id="stock-mode" hidden>
     <div class="stock-inner">
       <h2>사회 뉴스로 보는 주식</h2>
       <p class="sub">
-        관심 종목을 등록하면 최근 거래일 기준 주가와 관련 뉴스를 함께 보여드려요.
+        관심 종목을 등록하면 관련 뉴스를 모아 보여드려요.
+        <br />(주가 데이터 연동은 다음 단계에서 준비 중이에요)
       </p>
 
       <!-- 종목 등록 입력창 -->
@@ -991,35 +876,27 @@
     "스포츠": "스포츠",
   };
 
+  // 대표 버튼 클릭 시 카테고리 선택 영역으로 부드럽게 스크롤 이동
+  function scrollToCategory() {
+    document.getElementById("category-section").scrollIntoView({ behavior: "smooth" });
+  }
+
   const chips = document.querySelectorAll(".category-chip");
   const preview = document.getElementById("summary-preview");
   const summaryTitle = document.getElementById("summary-title");
   const summaryList = document.getElementById("summary-list");
 
   // ===============================
-  // 화면 전환: 홈 ↔ "뉴스한입" ↔ "사회 뉴스로 보는 주식"
-  // 세 화면 중 하나만 보이고 나머지는 hidden 처리하는 방식이에요.
+  // 화면 모드 전환: "뉴스한입" ↔ "사회 뉴스로 보는 주식"
   // ===============================
-  const homeModeEl = document.getElementById("home-mode");
+  const modeSelect = document.getElementById("mode-select");
   const newsModeEl = document.getElementById("news-mode");
   const stockModeEl = document.getElementById("stock-mode");
 
-  function showMode(mode) {
-    homeModeEl.hidden = mode !== "home";
-    newsModeEl.hidden = mode !== "news";
-    stockModeEl.hidden = mode !== "stock";
-  }
-
-  // 로고 클릭 → 홈으로 이동
-  document.getElementById("logo-home-btn").addEventListener("click", () => {
-    showMode("home");
-  });
-
-  // 홈 화면의 모드 선택 카드 + 헤더의 빠른 이동 링크 클릭 → 해당 모드로 이동
-  document.querySelectorAll(".mode-card, .nav-link").forEach((el) => {
-    el.addEventListener("click", () => {
-      showMode(el.dataset.target);
-    });
+  modeSelect.addEventListener("change", () => {
+    const isStockMode = modeSelect.value === "stock";
+    newsModeEl.hidden = isStockMode;
+    stockModeEl.hidden = !isStockMode;
   });
 
   // 네이버 API가 돌려주는 제목에는 <b>강조</b> 태그와 &quot; 같은 특수문자 코드가
@@ -1064,12 +941,8 @@
   //
   // 네이버 뉴스 검색 API에는 조회수·공유수 같은 "인기도" 정보가 없어요.
   // 그래서 대신 "오늘 기사인지" + "여러 언론사가 동시에 같은 주제를 다루고 있는지"를
-  // 화제성의 대리 지표로 사용합니다.
-  //
-  // 처음에는 "겹치는 기사가 많을수록 점수를 높게" 매겨서 그냥 줄을 세웠더니,
-  // 화제성 1위 주제 하나가 상위 5개 자리를 거의 다 차지해버리는 문제가 있었어요.
-  // 그래서 지금은 비슷한 주제끼리 먼저 그룹으로 묶고, 그룹마다 대표 기사를
-  // "딱 1개씩만" 뽑아서 다양한 주제를 골고루 보여주도록 바꿨습니다.
+  // 화제성의 대리 지표로 사용합니다. 여러 기사가 서로 키워드를 공유할수록
+  // = 같은 사안을 여러 곳에서 동시에 보도하고 있다는 뜻이므로, 화제성이 높다고 봐요.
   // ===============================
   function isPublishedToday(pubDateStr) {
     if (!pubDateStr) return false;
@@ -1085,74 +958,34 @@
     );
   }
 
-  // 기사들을 "같은 주제로 보이는 것끼리" 그룹으로 묶어주는 함수
-  // - 각 그룹은 맨 처음 들어온 기사의 키워드를 "기준 키워드"로 삼고,
-  //   이후 기사들은 기준 키워드와 하나라도 겹치면 같은 그룹으로 묶습니다.
-  function clusterArticles(pool) {
-    const clusters = [];
-
-    pool.forEach((item) => {
-      const keywords = extractKeywords(cleanText(item.title));
-
-      const matchedCluster = clusters.find((cluster) =>
-        keywords.some((k) => cluster.seedKeywords.includes(k))
-      );
-
-      if (matchedCluster) {
-        matchedCluster.items.push(item);
-      } else {
-        clusters.push({ seedKeywords: keywords, items: [item] });
-      }
-    });
-
-    return clusters;
-  }
-
   function pickHotArticles(items, count = 5) {
     // 1) 오늘 발행된 기사를 우선 후보로 삼되, 오늘 기사가 너무 적으면(예: 새벽 시간대)
     //    전체 기사를 대상으로 다시 판단합니다.
     const todayItems = items.filter((item) => isPublishedToday(item.pubDate));
     const pool = todayItems.length >= 3 ? todayItems : items;
 
-    // 2) 비슷한 주제끼리 그룹으로 묶고, 기사가 많이 모인(=여러 곳에서 다루는) 그룹부터 정렬
-    const clusters = clusterArticles(pool);
-    clusters.sort((a, b) => b.items.length - a.items.length);
+    // 2) 기사별로 키워드를 미리 뽑아둡니다.
+    const withKeywords = pool.map((item) => ({
+      item,
+      keywords: extractKeywords(cleanText(item.title)),
+    }));
 
-    // 3) 그룹마다 가장 최신 기사 1개씩만 대표로 뽑아서 다양성을 확보
-    const picked = [];
-    const pickedKeys = new Set();
-
-    clusters.forEach((cluster) => {
-      if (picked.length >= count) return;
-
-      const representative = cluster.items.reduce((latest, item) => {
-        const itemTime = new Date(item.pubDate).getTime() || 0;
-        const latestTime = new Date(latest.pubDate).getTime() || 0;
-        return itemTime > latestTime ? item : latest;
+    // 3) 서로 키워드를 공유하는 다른 기사가 몇 개나 있는지 세어서 "동시 보도 점수"로 사용합니다.
+    const scored = withKeywords.map((entry, idx) => {
+      let overlapScore = 0;
+      withKeywords.forEach((other, otherIdx) => {
+        if (idx === otherIdx) return;
+        const sharesKeyword = entry.keywords.some((k) => other.keywords.includes(k));
+        if (sharesKeyword) overlapScore += 1;
       });
-
-      const key = representative.originallink || representative.link;
-      picked.push(representative);
-      pickedKeys.add(key);
+      return { item: entry.item, overlapScore };
     });
 
-    // 4) 서로 다른 주제만으로 count개를 다 못 채웠다면(그룹 수가 적은 경우),
-    //    이미 뽑은 기사를 제외하고 큰 그룹부터 다음 기사로 남은 자리를 채웁니다.
-    if (picked.length < count) {
-      for (const cluster of clusters) {
-        for (const item of cluster.items) {
-          if (picked.length >= count) break;
-          const key = item.originallink || item.link;
-          if (!pickedKeys.has(key)) {
-            picked.push(item);
-            pickedKeys.add(key);
-          }
-        }
-        if (picked.length >= count) break;
-      }
-    }
-
-    return picked;
+    // 4) 점수가 높은(=여러 곳에서 동시에 다루는) 기사 순으로 정렬해서 상위 N개만 사용
+    return scored
+      .sort((a, b) => b.overlapScore - a.overlapScore)
+      .slice(0, count)
+      .map((entry) => entry.item);
   }
 
   // ===============================
@@ -1276,7 +1109,9 @@
   }
 
   // ===============================
-  // 사회 뉴스로 보는 주식 (관심 종목 등록, 실제 주가(/api/stock), 관련 뉴스 모두 동작해요.)
+  // 사회 뉴스로 보는 주식 (신규 - 관심 종목 등록은 실제로 동작하고,
+  // 관련 뉴스도 실제 검색 결과를 보여줘요. 주가 데이터만 다음 단계에서 연동할 예정이라
+  // 지금은 "주가 연동 예정" 자리표시자만 보여줍니다.)
   // 종목 목록도 찜 목록과 마찬가지로 로그인 없이 이 브라우저의 localStorage에만 저장돼요.
   // ===============================
   const STOCK_KEY = "newsBiteStocks";
@@ -1295,109 +1130,29 @@
 
     stocks.push(name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
-
-    // 전체 목록을 다시 그리지 않고, 새로 등록한 종목 카드 1개만 추가해요.
-    // (그래야 이미 불러온 다른 종목들의 주가를 불필요하게 다시 요청하지 않아요)
-    document.getElementById("stock-empty").hidden = true;
-    document.getElementById("stock-list").appendChild(createStockCard(name));
+    renderStocks();
   }
 
   function removeStock(name) {
     const stocks = getStocks().filter((s) => s !== name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
-
-    // 전체를 다시 그리지 않고, 삭제한 종목의 카드 하나만 화면에서 제거해요.
-    const card = document.querySelector(`.stock-card[data-stock-name="${CSS.escape(name)}"]`);
-    if (card) card.remove();
-
-    if (stocks.length === 0) {
-      document.getElementById("stock-empty").hidden = false;
-    }
+    renderStocks();
   }
 
-  // KRX API가 주는 숫자 문자열(콤마 포함 가능)을 화면에 보기 좋게 표시하는 함수
-  function formatKrxNumber(value) {
-    const num = Number(String(value).replace(/,/g, ""));
-    if (Number.isNaN(num)) return value;
-    return num.toLocaleString("ko-KR");
-  }
-
-  // "20260916" 같은 basDate 문자열을 "9월 16일" 형태로 바꿔주는 함수
-  function formatBaseDateLabel(baseDateStr) {
-    if (!baseDateStr || baseDateStr.length !== 8) return "";
-    const month = parseInt(baseDateStr.slice(4, 6), 10);
-    const day = parseInt(baseDateStr.slice(6, 8), 10);
-    return `${month}월 ${day}일`;
-  }
-
-  // 종목명을 받아서 /api/stock 에서 실제 주가를 가져온 뒤, priceEl 자리에 채워 넣는 함수.
-  // onLoaded 콜백으로 이 주가가 몇 월 며칠 기준(baseDate)인지 호출한 쪽에도 알려줘요.
-  // (관련 뉴스도 같은 날짜 기준으로 찾기 위해서예요)
-  async function loadStockPrice(stockName, priceEl, onLoaded) {
-    priceEl.innerHTML = '<span class="stock-price-placeholder">주가 불러오는 중...</span>';
-
-    try {
-      const response = await fetch(`/api/stock?name=${encodeURIComponent(stockName)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "요청에 실패했습니다.");
-      }
-
-      // 등락률(changeRate) 부호로 상승/하락/보합을 판단합니다.
-      // 국내 증시 관례: 상승은 빨간색, 하락은 파란색으로 표시해요.
-      const changeRateNum = Number(String(data.changeRate).replace(/,/g, ""));
-      let direction = "flat";
-      if (changeRateNum > 0) direction = "up";
-      else if (changeRateNum < 0) direction = "down";
-
-      const arrow = direction === "up" ? "▲" : direction === "down" ? "▼" : "-";
-      const sign = changeRateNum > 0 ? "+" : ""; // 마이너스는 숫자 자체에 이미 포함되어 있어요
-
-      priceEl.innerHTML = `
-        <span class="stock-price">
-          <span class="close-price">${formatKrxNumber(data.closePrice)}원</span>
-          <span class="change-rate ${direction}">${arrow} ${sign}${data.changeRate}%</span>
-          <span class="base-date">(${formatBaseDateLabel(data.baseDate)} 기준)</span>
-        </span>
-      `;
-
-      if (onLoaded) onLoaded(data.baseDate);
-    } catch (error) {
-      priceEl.innerHTML = '<span class="stock-price-placeholder">주가 정보를 불러올 수 없어요</span>';
-      console.error(error);
-    }
-  }
-
-  // 종목 하나를 받아서 "종목명 + 실시간 주가 + 관련 뉴스 보기" 카드를 만드는 함수
+  // 종목 하나를 받아서 "종목명 + 주가 자리표시자 + 관련 뉴스 보기" 카드를 만드는 함수
   function createStockCard(stockName) {
     const card = document.createElement("div");
     card.className = "stock-card";
-    card.dataset.stockName = stockName; // 삭제할 때 이 카드만 정확히 찾아 지우기 위한 표시
 
     const top = document.createElement("div");
     top.className = "stock-card-top";
 
     const nameGroup = document.createElement("div");
     nameGroup.className = "stock-name-group";
-
-    const nameEl = document.createElement("span");
-    nameEl.className = "stock-name";
-    nameEl.textContent = stockName;
-
-    const priceEl = document.createElement("span");
-    priceEl.className = "stock-price-slot";
-
-    nameGroup.appendChild(nameEl);
-    nameGroup.appendChild(priceEl);
-
-    // 주가 기준일자(예: "20260916")를 저장해뒀다가, 관련 뉴스도 같은 날짜 기준으로 찾을 때 써요.
-    let stockBaseDate = null;
-
-    // 카드가 만들어지자마자 바로 주가를 불러옵니다.
-    loadStockPrice(stockName, priceEl, (baseDate) => {
-      stockBaseDate = baseDate;
-    });
+    nameGroup.innerHTML = `
+      <span class="stock-name">${stockName}</span>
+      <span class="stock-price-placeholder">주가 연동 예정</span>
+    `;
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
@@ -1434,8 +1189,7 @@
       newsBtn.textContent = "📰 관련 뉴스 접기";
 
       if (!loaded) {
-        // 주가 기준일자를 넘겨서, 그 날짜에 발행된 뉴스 위주로 찾도록 해요.
-        loadRelatedArticles(stockName, relatedPanel, stockBaseDate);
+        loadRelatedArticles(stockName, relatedPanel);
         loaded = true;
       }
     });
@@ -1583,21 +1337,9 @@
     return card;
   }
 
-  // 뉴스 항목의 pubDate가 "YYYYMMDD" 문자열과 같은 날짜인지 확인하는 함수
-  function isSameDate(pubDateStr, targetDateStr) {
-    const d = new Date(pubDateStr);
-    if (Number.isNaN(d.getTime())) return false;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}${m}${day}` === targetDateStr;
-  }
-
   // 검색어(키워드 또는 제목)를 받아서, 관련 기사 3~4개를 불러와 패널에 채워 넣는 함수
   // (AI 요약 없이, 네이버 검색 결과를 제목 + 스니펫 + 원문 링크 형태로 그대로 보여줌)
-  // filterDateStr("YYYYMMDD")이 주어지면, 그 날짜에 발행된 기사를 우선 보여줘요.
-  // (주식 종목의 "관련 뉴스"는 주가 기준일자와 맞춰서 보여주기 위함이에요)
-  async function loadRelatedArticles(searchQuery, panelElement, filterDateStr) {
+  async function loadRelatedArticles(searchQuery, panelElement) {
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
@@ -1610,22 +1352,14 @@
         throw new Error(data.error || "요청에 실패했습니다.");
       }
 
-      let items = data.items || [];
-
-      if (filterDateStr) {
-        const sameDateItems = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
-        // 그 날짜의 뉴스가 있으면 그것만, 없으면 원래 결과(최신 뉴스)를 그대로 보여줘요.
-        if (sameDateItems.length > 0) items = sameDateItems;
-      }
-
-      if (items.length === 0) {
+      if (!data.items || data.items.length === 0) {
         panelElement.innerHTML = '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
         return;
       }
 
       panelElement.innerHTML = "";
 
-      items.forEach((relatedItem) => {
+      data.items.forEach((relatedItem) => {
         const relatedTitle = cleanText(relatedItem.title);
         const relatedDesc = cleanText(relatedItem.description);
         const relatedUrl =
