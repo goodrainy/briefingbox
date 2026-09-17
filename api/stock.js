@@ -118,6 +118,21 @@ export default async function handler(req, res) {
 
     const tradeRow = tradeItems.find((item) => item.ISU_CD === matched.ISU_CD);
 
+    // ===============================
+    // [임시 디버그] ?debug=1 을 붙여서 요청하면, 실제 KRX 응답의 원본 필드명과 값을
+    // 그대로 보여줍니다. 문제를 다 고치고 나면 이 블록은 지울 거예요.
+    // ===============================
+    if (req.query.debug) {
+      res.status(200).json({
+        basDd,
+        matchedFromBaseInfo: matched,
+        tradeRowFound: !!tradeRow,
+        tradeItemsCount: tradeItems.length,
+        tradeItemsSample: tradeItems.slice(0, 2),
+      });
+      return;
+    }
+
     if (!tradeRow) {
       res.status(404).json({ error: `"${keyword}"의 시세 정보를 찾을 수 없어요.` });
       return;
