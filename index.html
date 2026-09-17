@@ -89,6 +89,28 @@
     font-size: 1.6rem;
   }
 
+  /* 헤더 오른쪽의 빠른 이동 링크 (아래 모드 선택 카드와 같은 곳으로 이동해요) */
+  .header-nav {
+    display: flex;
+    gap: 20px;
+  }
+
+  .nav-link {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--color-primary);
+  }
+
   /* ---------- 모드 선택 카드 (홈 화면에서 뉴스/주식 중 고르는 부분) ---------- */
   .mode-picker {
     max-width: 900px;
@@ -788,17 +810,30 @@
     header {
       padding: 16px 5%;
     }
+
+    .header-nav {
+      gap: 10px;
+    }
+
+    .nav-link {
+      font-size: 0.78rem;
+      padding: 4px;
+    }
   }
 </style>
 </head>
 <body>
 
-  <!-- ================= 헤더: 서비스 로고 (클릭하면 홈으로 이동) ================= -->
+  <!-- ================= 헤더: 서비스 로고(홈 이동) + 빠른 이동 링크 ================= -->
   <header>
     <button class="logo" id="logo-home-btn" type="button">
       <span class="logo-icon">📰</span>
       <span>뉴스한입</span>
     </button>
+    <nav class="header-nav">
+      <button type="button" class="nav-link" data-target="news">뉴스 요약</button>
+      <button type="button" class="nav-link" data-target="stock">사회 뉴스로 보는 주식</button>
+    </nav>
   </header>
 
   <!-- ================= 홈 화면: 서비스 소개 + 두 가지 모드 선택 ================= -->
@@ -980,10 +1015,10 @@
     showMode("home");
   });
 
-  // 홈 화면의 모드 선택 카드 클릭 → 해당 모드로 이동
-  document.querySelectorAll(".mode-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      showMode(card.dataset.target);
+  // 홈 화면의 모드 선택 카드 + 헤더의 빠른 이동 링크 클릭 → 해당 모드로 이동
+  document.querySelectorAll(".mode-card, .nav-link").forEach((el) => {
+    el.addEventListener("click", () => {
+      showMode(el.dataset.target);
     });
   });
 
