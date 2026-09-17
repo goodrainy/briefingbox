@@ -81,10 +81,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1단계: 종목기본정보에서 이름으로 종목 찾기 (가장 최근 거래일 기준)
-    const { basDd, items: baseInfoItems } = await fetchKrxWithFallback(
-      BASE_INFO_URL,
+    // 1단계: 일별매매정보 기준으로 "실제 시세 데이터가 있는 가장 최근 거래일"을 먼저 찾습니다.
+    //
+    // [주의] 종목기본정보는 회사 기본 정보라서 거래일이 아니어도(예: 당일 장 마감 직후,
+    // 데이터가 아직 안 올라온 시점) 데이터가 존재할 수 있어요. 하지만 일별매매정보는
+    // 실제로 그날 거래가 이뤄지고 데이터가 집계되어야만 존재해요. 그래서 순서를 바꿔서
+    // "시세가 실제로 있는 날짜"를 먼저 확정한 뒤, 그 날짜로 종목 정보를 조회해야
+    // 두 데이터의 기준일자가 어긋나지 않습니다.
+    const { basDd, items: tradeItems } = await fetchKrxWithFallback(
+      TRADE_INFO_URL,
       authKey
+    );
+
+    // 2단계: 확정된 기준일자로 종목기본정보를 가져와서 이름으로 종목 찾기
+    const { items: baseInfoItems } = await fetchKrxWithFallback(
+      BASE_INFO_URL,
+      authKey,
+      basDd
     );
 
     const keyword = name.trim();
@@ -102,13 +115,6 @@ export default async function handler(req, res) {
       res.status(404).json({ error: `"${keyword}" 종목을 유가증권시장(KOSPI)에서 찾을 수 없어요.` });
       return;
     }
-
-    // 2단계: 같은 기준일자로 일별매매정보를 가져와서 ISU_CD가 일치하는 시세 찾기
-    const { items: tradeItems } = await fetchKrxWithFallback(
-      TRADE_INFO_URL,
-      authKey,
-      basDd
-    );
 
     const tradeRow = tradeItems.find((item) => item.ISU_CD === matched.ISU_CD);
 
