@@ -9,7 +9,6 @@
 // "종목기본정보"와 "일별매매정보" 두 API 모두, 종목코드로 하나만 딱 찍어서
 // 조회하는 방식이 아니라 "그날 유가증권시장(KOSPI) 전체 종목"을 한 번에 돌려줍니다.
 // 그래서 원하는 종목은 응답 배열(OutBlock_1) 안에서 이름/코드로 직접 찾아야 해요.
-// 두 API 응답에 공통으로 들어있는 ISU_CD(표준코드)를 연결고리로 사용합니다.
 // ===============================
 
 const BASE_INFO_URL = "https://data-dbg.krx.co.kr/svc/apis/sto/stk_isu_base_info";
@@ -116,22 +115,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    const tradeRow = tradeItems.find((item) => item.ISU_CD === matched.ISU_CD);
-
-    // ===============================
-    // [임시 디버그] ?debug=1 을 붙여서 요청하면, 실제 KRX 응답의 원본 필드명과 값을
-    // 그대로 보여줍니다. 문제를 다 고치고 나면 이 블록은 지울 거예요.
-    // ===============================
-    if (req.query.debug) {
-      res.status(200).json({
-        basDd,
-        matchedFromBaseInfo: matched,
-        tradeRowFound: !!tradeRow,
-        tradeItemsCount: tradeItems.length,
-        tradeItemsSample: tradeItems.slice(0, 2),
-      });
-      return;
-    }
+    // [주의] 두 API 모두 필드 이름은 똑같이 "ISU_CD"이지만, 실제 값의 형식이 서로 달라요.
+    // - 종목기본정보의 ISU_CD: "KR7005930003" 같은 12자리 표준코드(ISIN)
+    // - 일별매매정보의 ISU_CD: "005930" 같은 6자리 단축코드
+    // 그래서 종목기본정보의 6자리 단축코드 필드인 ISU_SRT_CD로 연결해야 합니다.
+    const tradeRow = tradeItems.find((item) => item.ISU_CD === matched.ISU_SRT_CD);
 
     if (!tradeRow) {
       res.status(404).json({ error: `"${keyword}"의 시세 정보를 찾을 수 없어요.` });
