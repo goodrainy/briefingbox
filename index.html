@@ -657,7 +657,7 @@
     font-weight: 700;
   }
 
-  /* 주가 데이터는 아직 연동 전이라, 준비 중임을 알리는 자리표시자 배지예요 */
+  /* 주가를 아직 불러오는 중이거나, 못 불러왔을 때 보여주는 배지 */
   .stock-price-placeholder {
     font-size: 0.75rem;
     font-weight: 600;
@@ -666,6 +666,41 @@
     border: 1px dashed var(--color-border);
     padding: 3px 9px;
     border-radius: 999px;
+  }
+
+  /* 실제 주가 표시: 종가 + 등락률
+     국내 증시 관례대로 상승은 빨간색, 하락은 파란색으로 표시해요 */
+  .stock-price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .stock-price .close-price {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .stock-price .change-rate {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  .stock-price .change-rate.up {
+    color: #d92d20;
+    background: #fdeceb;
+  }
+
+  .stock-price .change-rate.down {
+    color: #175cd3;
+    background: #eaf1ff;
+  }
+
+  .stock-price .change-rate.flat {
+    color: var(--color-text-light);
+    background: var(--color-bg);
   }
 
   .stock-remove {
@@ -1183,7 +1218,48 @@
     renderStocks();
   }
 
-  // 종목 하나를 받아서 "종목명 + 주가 자리표시자 + 관련 뉴스 보기" 카드를 만드는 함수
+  // KRX API가 주는 숫자 문자열(콤마 포함 가능)을 화면에 보기 좋게 표시하는 함수
+  function formatKrxNumber(value) {
+    const num = Number(String(value).replace(/,/g, ""));
+    if (Number.isNaN(num)) return value;
+    return num.toLocaleString("ko-KR");
+  }
+
+  // 종목명을 받아서 /api/stock 에서 실제 주가를 가져온 뒤, priceEl 자리에 채워 넣는 함수
+  async function loadStockPrice(stockName, priceEl) {
+    priceEl.innerHTML = '<span class="stock-price-placeholder">주가 불러오는 중...</span>';
+
+    try {
+      const response = await fetch(`/api/stock?name=${encodeURIComponent(stockName)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
+      }
+
+      // 등락률(changeRate) 부호로 상승/하락/보합을 판단합니다.
+      // 국내 증시 관례: 상승은 빨간색, 하락은 파란색으로 표시해요.
+      const changeRateNum = Number(String(data.changeRate).replace(/,/g, ""));
+      let direction = "flat";
+      if (changeRateNum > 0) direction = "up";
+      else if (changeRateNum < 0) direction = "down";
+
+      const arrow = direction === "up" ? "▲" : direction === "down" ? "▼" : "-";
+      const sign = changeRateNum > 0 ? "+" : ""; // 마이너스는 숫자 자체에 이미 포함되어 있어요
+
+      priceEl.innerHTML = `
+        <span class="stock-price">
+          <span class="close-price">${formatKrxNumber(data.closePrice)}원</span>
+          <span class="change-rate ${direction}">${arrow} ${sign}${data.changeRate}%</span>
+        </span>
+      `;
+    } catch (error) {
+      priceEl.innerHTML = '<span class="stock-price-placeholder">주가 정보를 불러올 수 없어요</span>';
+      console.error(error);
+    }
+  }
+
+  // 종목 하나를 받아서 "종목명 + 실시간 주가 + 관련 뉴스 보기" 카드를 만드는 함수
   function createStockCard(stockName) {
     const card = document.createElement("div");
     card.className = "stock-card";
@@ -1193,10 +1269,19 @@
 
     const nameGroup = document.createElement("div");
     nameGroup.className = "stock-name-group";
-    nameGroup.innerHTML = `
-      <span class="stock-name">${stockName}</span>
-      <span class="stock-price-placeholder">주가 연동 예정</span>
-    `;
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "stock-name";
+    nameEl.textContent = stockName;
+
+    const priceEl = document.createElement("span");
+    priceEl.className = "stock-price-slot";
+
+    nameGroup.appendChild(nameEl);
+    nameGroup.appendChild(priceEl);
+
+    // 카드가 만들어지자마자 바로 주가를 불러옵니다.
+    loadStockPrice(stockName, priceEl);
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
