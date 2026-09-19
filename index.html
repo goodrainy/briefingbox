@@ -342,9 +342,13 @@
     border-bottom: 1px dashed var(--color-border);
   }
 
-    /* .politics-filters의 display:flex가 hidden 속성을 이겨버리지 않도록 확실히 숨김 */
+  /* .politics-filters의 display:flex가 hidden 속성을 이겨버리지 않도록 확실히 숨김 */
   .politics-filters[hidden] {
     display: none;
+  }
+
+  .day-filter {
+    margin-bottom: 14px;
   }
 
   .filter-row {
@@ -928,6 +932,13 @@
         <span class="tag">뉴스 요약</span>
         <h4 id="summary-title">카테고리를 선택하면 여기에 요약이 표시돼요</h4>
 
+        <!-- 오늘 / 어제 기사 선택 -->
+        <div class="filter-row day-filter" id="day-filter-row">
+          <span class="filter-label">날짜</span>
+          <button type="button" class="filter-chip active" data-day="today">오늘</button>
+          <button type="button" class="filter-chip" data-day="yesterday">어제</button>
+        </div>
+
         <!-- 정치·경제 카테고리를 선택했을 때만 나타나는 언론사 필터 -->
         <div class="politics-filters" id="politics-filters" hidden>
           <div class="filter-row" id="outlet-filter-row">
@@ -1058,10 +1069,29 @@
 
   // 문장부호를 지우고 의미 없는 단어를 거른 뒤, 중복 없는 단어 목록만 뽑는 함수.
   // 화면에 보여줄 키워드 3개를 뽑을 때도, 중복 기사 판단에 쓸 전체 단어를 뽑을 때도 재사용해요.
+  // 단어 끝에 붙은 조사를 떼어내요. (예: "아시안게임서" → "아시안게임", "기권으로" → "기권")
+  // 원래 단어가 잘리지 않도록, 떼고 남는 글자 수가 충분할 때만 떼요.
+  const PARTICLES_LONG = [
+    "에서는", "으로는", "에서도", "으로도", "으로서", "으로써", "에서", "으로", "에게", "께서",
+    "까지", "부터", "처럼", "에는", "에도", "이나", "라고",
+  ];
+  const PARTICLES_SHORT = ["은", "는", "이", "가", "을", "를", "의", "에", "와", "과", "로", "서"];
+
+  function stripParticle(word) {
+    for (const p of PARTICLES_LONG) {
+      if (word.endsWith(p) && word.length - p.length >= 2) return word.slice(0, -p.length);
+    }
+    for (const p of PARTICLES_SHORT) {
+      if (word.endsWith(p) && word.length - p.length >= 3) return word.slice(0, -p.length);
+    }
+    return word;
+  }
+
   function extractSignificantWords(title) {
     const words = title
       .replace(/[^\p{L}\p{N}\s]/gu, " ") // 문장부호 제거, 한글/영문/숫자만 남기기
       .split(/\s+/)
+      .map(stripParticle)
       .filter((w) => w.length >= 2 && !NEWS_STOPWORDS.has(w));
 
     return [...new Set(words)];
@@ -1103,7 +1133,18 @@
   // - 화면에 보여줄 키워드 3개가 아니라, 제목에서 뽑을 수 있는 의미 있는 단어를
   //   전부 비교해서 겹치는 단어가 5개 이상이면 같은 그룹으로 묶습니다.
   //   (겹치는 단어가 많다 = 여러 언론사가 같은 기사를 거의 그대로 옮겼을 가능성이 높음)
+  //   뉴스 제목은 짧아서 5개까지 겹치는 경우가 드물기 때문에,
+  //   "3글자 이상 핵심 단어가 2개 이상" 겹쳐도 같은 사건으로 봅니다. (예: 테크볼 + 이준석)
+  //   "아시안게임" / "아시안게임서"처럼 뒤에 조사만 붙은 단어도 같은 단어로 취급해요.
   const DUPLICATE_WORD_OVERLAP_THRESHOLD = 5;
+  const DUPLICATE_STRONG_WORD_THRESHOLD = 2;
+
+  function wordsMatch(a, b) {
+    if (a === b) return true;
+    const shorter = a.length <= b.length ? a : b;
+    const longer = a.length <= b.length ? b : a;
+    return shorter.length >= 3 && longer.startsWith(shorter);
+  }
 
   function clusterArticles(pool) {
     const clusters = [];
@@ -1112,14 +1153,21 @@
       const words = extractSignificantWords(cleanText(item.title));
 
       const matchedCluster = clusters.find((cluster) => {
-        const overlapCount = words.filter((w) => cluster.seedWords.includes(w)).length;
-        return overlapCount >= DUPLICATE_WORD_OVERLAP_THRESHOLD;
+        const shared = words.filter((w) => cluster.words.some((cw) => wordsMatch(w, cw)));
+        const strongCount = shared.filter((w) => w.length >= 3).length;
+        return (
+          shared.length >= DUPLICATE_WORD_OVERLAP_THRESHOLD ||
+          strongCount >= DUPLICATE_STRONG_WORD_THRESHOLD
+        );
       });
 
       if (matchedCluster) {
         matchedCluster.items.push(item);
+        words.forEach((w) => {
+          if (!matchedCluster.words.includes(w)) matchedCluster.words.push(w);
+        });
       } else {
-        clusters.push({ seedWords: words, items: [item] });
+        clusters.push({ words: [...words], items: [item] });
       }
     });
 
@@ -1154,19 +1202,29 @@
       pickedKeys.add(key);
     });
 
-    // 4) 서로 다른 주제만으로 count개를 다 못 채웠다면(그룹 수가 적은 경우),
-    //    이미 뽑은 기사를 제외하고 큰 그룹부터 다음 기사로 남은 자리를 채웁니다.
-    if (picked.length < count) {
-      for (const cluster of clusters) {
-        for (const item of cluster.items) {
-          if (picked.length >= count) break;
-          const key = item.originallink || item.link;
-          if (!pickedKeys.has(key)) {
-            picked.push(item);
-            pickedKeys.add(key);
-          }
-        }
+    // 4) 자리가 남았다면(오늘 기사 주제가 적은 경우), 오늘이 아닌 기사 중에서
+    //    이미 뽑은 주제와 겹치지 않는 새 주제의 대표 기사만 추가합니다.
+    //    (같은 주제 기사를 다시 채워 넣으면 중복이 생기므로, 그럴 바엔 적게 보여줘요)
+    if (picked.length < count && pool !== items) {
+      const allClusters = clusterArticles(items);
+      allClusters.sort((a, b) => b.items.length - a.items.length);
+
+      for (const cluster of allClusters) {
         if (picked.length >= count) break;
+
+        const alreadyCovered = cluster.items.some((item) =>
+          pickedKeys.has(item.originallink || item.link)
+        );
+        if (alreadyCovered) continue;
+
+        const representative = cluster.items.reduce((latest, item) => {
+          const itemTime = new Date(item.pubDate).getTime() || 0;
+          const latestTime = new Date(latest.pubDate).getTime() || 0;
+          return itemTime > latestTime ? item : latest;
+        });
+
+        picked.push(representative);
+        pickedKeys.add(representative.originallink || representative.link);
       }
     }
 
@@ -1570,10 +1628,12 @@
     const keywordRow = document.createElement("div");
     keywordRow.className = "keyword-row";
 
-    if (pubTimeText) {
+    // 언론사 이름(원문 주소로 알아낸 것, 모르면 생략) + 발행 시각
+    const metaText = [matchOutlet(item), pubTimeText].filter(Boolean).join(" · ");
+    if (metaText) {
       const pubTimeEl = document.createElement("span");
       pubTimeEl.className = "pub-time";
-      pubTimeEl.textContent = pubTimeText;
+      pubTimeEl.textContent = metaText;
       keywordRow.appendChild(pubTimeEl);
     }
 
@@ -1739,14 +1799,60 @@
   // ===============================
   const OUTLET_FILTER_CATEGORIES = ["정치", "경제"];
 
-  const MAJOR_PRESS_OUTLETS = [
-    { name: "연합뉴스", domain: "yna.co.kr" },
-    { name: "조선일보", domain: "chosun.com" },
-    { name: "중앙일보", domain: "joongang.co.kr" },
-    { name: "동아일보", domain: "donga.com" },
-    { name: "한겨레", domain: "hani.co.kr" },
-    { name: "경향신문", domain: "khan.co.kr" },
-  ];
+  // 언론사 필터 버튼으로 보여줄 대표 언론사 (아래 도메인 표에 있는 이름이어야 해요)
+  const MAJOR_PRESS_OUTLETS = ["연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문"];
+
+  // 네이버 API는 언론사 이름을 주지 않아서, 기사 원문 주소(URL)의 도메인으로 언론사를 알아내요.
+  // 표에 없는 도메인은 "언론사 모름"으로 처리돼요. (새 언론사는 여기에 한 줄씩 추가하면 돼요)
+  const OUTLET_DOMAIN_MAP = {
+    "yna.co.kr": "연합뉴스",
+    "yonhapnewstv.co.kr": "연합뉴스TV",
+    "chosun.com": "조선일보",
+    "biz.chosun.com": "조선비즈",
+    "sports.chosun.com": "스포츠조선",
+    "joongang.co.kr": "중앙일보",
+    "donga.com": "동아일보",
+    "sports.donga.com": "스포츠동아",
+    "hani.co.kr": "한겨레",
+    "khan.co.kr": "경향신문",
+    "kmib.co.kr": "국민일보",
+    "hankookilbo.com": "한국일보",
+    "munhwa.com": "문화일보",
+    "segye.com": "세계일보",
+    "seoul.co.kr": "서울신문",
+    "mk.co.kr": "매일경제",
+    "hankyung.com": "한국경제",
+    "sedaily.com": "서울경제",
+    "edaily.co.kr": "이데일리",
+    "mt.co.kr": "머니투데이",
+    "fnnews.com": "파이낸셜뉴스",
+    "asiae.co.kr": "아시아경제",
+    "heraldcorp.com": "헤럴드경제",
+    "news1.kr": "뉴스1",
+    "newsis.com": "뉴시스",
+    "nocutnews.co.kr": "노컷뉴스",
+    "ohmynews.com": "오마이뉴스",
+    "pressian.com": "프레시안",
+    "dailian.co.kr": "데일리안",
+    "newdaily.co.kr": "뉴데일리",
+    "ajunews.com": "아주경제",
+    "sisajournal.com": "시사저널",
+    "kbs.co.kr": "KBS",
+    "imbc.com": "MBC",
+    "sbs.co.kr": "SBS",
+    "ytn.co.kr": "YTN",
+    "jtbc.co.kr": "JTBC",
+    "mbn.co.kr": "MBN",
+    "tvchosun.com": "TV조선",
+    "ichannela.com": "채널A",
+    "etnews.com": "전자신문",
+    "zdnet.co.kr": "ZDNet Korea",
+    "dt.co.kr": "디지털타임스",
+    "sportsseoul.com": "스포츠서울",
+    "osen.co.kr": "OSEN",
+    "starnewskorea.com": "스타뉴스",
+    "xportsnews.com": "엑스포츠뉴스",
+  };
 
   function extractDomain(url) {
     try {
@@ -1756,11 +1862,55 @@
     }
   }
 
+  // 원문 주소의 도메인으로 언론사 이름을 찾아요. (모르는 도메인이면 null)
+  // "sports.chosun.com"이면 먼저 "sports.chosun.com"을, 없으면 "chosun.com"을 찾는 식으로
+  // 더 구체적인 도메인부터 확인해서 계열 매체(조선비즈 등)가 본지로 섞이지 않게 해요.
   function matchOutlet(item) {
     const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
     const domain = extractDomain(url);
-    const found = MAJOR_PRESS_OUTLETS.find((outlet) => domain.includes(outlet.domain));
-    return found ? found.name : null;
+    if (!domain) return null;
+
+    const parts = domain.split(".");
+    for (let i = 0; i < parts.length - 1; i++) {
+      const candidate = parts.slice(i).join(".");
+      if (OUTLET_DOMAIN_MAP[candidate]) return OUTLET_DOMAIN_MAP[candidate];
+    }
+    return null;
+  }
+
+  // ===============================
+  // 오늘 / 어제 보기
+  // 네이버 검색 API에는 날짜 지정 기능이 없어서, "어제"는 관련도순(sim)으로 넉넉히(100개)
+  // 받아온 뒤 어제 발행된 기사만 남기는 방식이에요. 그래서 어제 기사가 적게 나올 수 있어요.
+  // ===============================
+  let newsDayMode = "today";
+  let currentCategory = null;
+  let loadCounter = 0; // 빠르게 버튼을 여러 번 눌렀을 때 늦게 도착한 옛 응답을 무시하기 위한 번호표
+
+  function isYesterday(pubDateStr) {
+    const d = new Date(pubDateStr);
+    if (Number.isNaN(d.getTime())) return false;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return toDateStr(d) === toDateStr(yesterday);
+  }
+
+  function dayLabel() {
+    return newsDayMode === "yesterday" ? "어제의" : "오늘의";
+  }
+
+  async function fetchNewsPool(query, todayDisplayCount) {
+    const url =
+      newsDayMode === "yesterday"
+        ? `/api/news?query=${encodeURIComponent(query)}&display=100&sort=sim`
+        : `/api/news?query=${encodeURIComponent(query)}&display=${todayDisplayCount}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+
+    const items = data.items || [];
+    return newsDayMode === "yesterday" ? items.filter((item) => isYesterday(item.pubDate)) : items;
   }
 
   let politicsRawPool = [];
@@ -1782,27 +1932,26 @@
     renderOutletFilterChips();
 
     if (outletName === "all") {
+      loadCounter++;
       politicsRawPool = politicsAllPool;
       applyPoliticsFiltersAndRender();
       return;
     }
 
+    const token = ++loadCounter;
     const requestedCategory = politicsCategory;
     summaryList.innerHTML = "";
     summaryTitle.textContent = `${outletName} ${requestedCategory} 뉴스를 불러오는 중...`;
 
     try {
       const query = `${categoryQueryMap[requestedCategory]} ${outletName}`;
-      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=30`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+      const items = await fetchNewsPool(query, 30);
+      if (token !== loadCounter) return;
 
-      if (politicsOutletFilter !== outletName || politicsCategory !== requestedCategory) return;
-      if (document.getElementById("politics-filters").hidden) return;
-
-      politicsRawPool = (data.items || []).filter((item) => matchOutlet(item) === outletName);
+      politicsRawPool = items.filter((item) => matchOutlet(item) === outletName);
       applyPoliticsFiltersAndRender();
     } catch (error) {
+      if (token !== loadCounter) return;
       summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
       console.error(error);
     }
@@ -1820,12 +1969,12 @@
     allBtn.textContent = "전체";
     row.appendChild(allBtn);
 
-    MAJOR_PRESS_OUTLETS.forEach((outlet) => {
+    MAJOR_PRESS_OUTLETS.forEach((outletName) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "filter-chip" + (politicsOutletFilter === outlet.name ? " active" : "");
-      btn.dataset.outlet = outlet.name;
-      btn.textContent = outlet.name;
+      btn.className = "filter-chip" + (politicsOutletFilter === outletName ? " active" : "");
+      btn.dataset.outlet = outletName;
+      btn.textContent = outletName;
       row.appendChild(btn);
     });
 
@@ -1847,13 +1996,13 @@
       return;
     }
 
-    summaryTitle.textContent = `오늘의 ${politicsCategory} 이슈 요약`;
+    summaryTitle.textContent = `${dayLabel()} ${politicsCategory} 이슈 요약`;
     hotItems.forEach((item) => {
       summaryList.appendChild(createNewsCard(item));
     });
   }
 
-    // ===============================
+  // ===============================
   // 스포츠 카테고리 전용: 제목 필터
   // "스포츠"로 검색하면 스포츠 매체가 쓴 연예·부고 기사 등도 섞여 나오기 때문에,
   // 제목에 스포츠 관련 단어가 있는 기사만 남기고, 부고성 단어가 있으면 뺍니다.
@@ -1877,47 +2026,53 @@
 
   // 선택한 카테고리의 실제 뉴스를 가져와서 요약 카드 목록으로 보여주는 함수
   async function loadCategorySummary(category) {
+    const token = ++loadCounter;
+    currentCategory = category;
+    const isOutletCategory = OUTLET_FILTER_CATEGORIES.includes(category);
+
     preview.classList.add("show");
     summaryTitle.textContent = `${category} 뉴스를 불러오는 중...`;
     summaryList.innerHTML = "";
 
     // 정치·경제 카테고리일 때만 언론사 필터 UI를 보여줘요.
-    document.getElementById("politics-filters").hidden = !OUTLET_FILTER_CATEGORIES.includes(category);
+    document.getElementById("politics-filters").hidden = !isOutletCategory;
+    if (isOutletCategory) {
+      politicsCategory = category;
+      politicsOutletFilter = "all";
+      politicsAllPool = [];
+      politicsRawPool = [];
+      renderOutletFilterChips();
+    }
 
     try {
       // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
       // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
       // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로 넉넉히 받아오는데,
-      // 정치·경제는 언론사 필터까지 있어서 후보 다양성이 더 중요하니 최대치(30개)로 받아옵니다.
+      // 정치·경제(언론사 필터)와 스포츠(제목 필터)는 걸러지는 기사가 많아서 최대치(30개)로 받아옵니다.
       const query = categoryQueryMap[category];
-      const displayCount =
-        OUTLET_FILTER_CATEGORIES.includes(category) || category === "스포츠" ? 30 : 20;
-      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=${displayCount}`);
-      const data = await response.json();
+      const displayCount = isOutletCategory || category === "스포츠" ? 30 : 20;
+      const items = await fetchNewsPool(query, displayCount);
+      if (token !== loadCounter) return;
 
-      if (!response.ok) {
-        throw new Error(data.error || "요청에 실패했습니다.");
-      }
-
-      if (!data.items || data.items.length === 0) {
-        summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
+      if (items.length === 0) {
+        summaryTitle.textContent =
+          newsDayMode === "yesterday"
+            ? `어제 ${category} 기사를 충분히 찾지 못했어요`
+            : `${category} 관련 뉴스를 찾지 못했어요`;
         return;
       }
 
-      if (OUTLET_FILTER_CATEGORIES.includes(category)) {
+      if (isOutletCategory) {
         // 정치·경제는 언론사 필터를 적용할 수 있도록 원본을 저장해두고 따로 그려요.
-        politicsRawPool = data.items;
-        politicsAllPool = data.items;
-        politicsCategory = category;
-        politicsOutletFilter = "all";
-        renderOutletFilterChips();
+        politicsRawPool = items;
+        politicsAllPool = items;
         applyPoliticsFiltersAndRender();
         return;
       }
 
-      let candidates = data.items;
+      let candidates = items;
       if (category === "스포츠") {
-        candidates = filterSportsTitles(data.items);
+        candidates = filterSportsTitles(items);
         if (candidates.length === 0) {
           summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
           return;
@@ -1927,13 +2082,14 @@
       // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
       const hotItems = pickHotArticles(candidates, 5);
 
-      summaryTitle.textContent = `오늘의 ${category} 이슈 요약`;
+      summaryTitle.textContent = `${dayLabel()} ${category} 이슈 요약`;
 
       // 뉴스 하나하나를 "더 보기"가 달린 카드로 만들어서 목록에 추가
       hotItems.forEach((item) => {
         summaryList.appendChild(createNewsCard(item));
       });
     } catch (error) {
+      if (token !== loadCounter) return;
       summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
       console.error(error);
     }
@@ -1947,6 +2103,18 @@
 
       const category = chip.getAttribute("data-category");
       loadCategorySummary(category);
+    });
+  });
+
+  // 오늘 / 어제 버튼: 누르면 지금 선택된 카테고리를 해당 날짜 기준으로 다시 불러와요.
+  const dayChips = document.querySelectorAll("#day-filter-row .filter-chip");
+  dayChips.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (newsDayMode === btn.dataset.day) return;
+
+      newsDayMode = btn.dataset.day;
+      dayChips.forEach((b) => b.classList.toggle("active", b === btn));
+      if (currentCategory) loadCategorySummary(currentCategory);
     });
   });
 
