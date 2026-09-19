@@ -1640,19 +1640,30 @@
   }
 
   // "관심있어요"로 찾는 관련 기사는, 그냥 최신순으로 다 가져오면 같은 날 나온
-  // 비슷한 기사들만 잔뜩 보일 수 있어요. 그래서 오늘부터 일주일 전까지,
-  // 하루에 기사 1개씩만 뽑아서 날짜별로 다양하게 보여줍니다.
-  function pickOnePerDayForPastWeek(items) {
+  // 비슷한 기사들만 잔뜩 보일 수 있어서 날짜를 최대한 다양하게 섞어서 보여줘요.
+  // - 먼저 서로 다른 날짜의 기사를 하나씩 우선적으로 담고,
+  // - 특정 사건은 하루이틀만 집중 보도되고 끝나는 경우가 많아서(=날짜가 그렇게 다양하지 않을 수 있어요),
+  //   그것만으로 개수를 못 채우면 남은 자리는 같은 날짜라도 최신 기사로 채워서
+  //   "관련 기사가 달랑 1개만" 나오는 일이 없도록 합니다.
+  function pickOnePerDayForPastWeek(items, maxCount = 7) {
+    const seenDates = new Set();
     const picked = [];
-    const today = new Date();
+    const leftover = [];
 
-    for (let i = 0; i < 7; i++) {
-      const targetDate = new Date(today);
-      targetDate.setDate(targetDate.getDate() - i);
-      const targetDateStr = toDateStr(targetDate);
+    items.forEach((item) => {
+      const dateObj = new Date(item.pubDate);
+      const dateStr = Number.isNaN(dateObj.getTime()) ? null : toDateStr(dateObj);
 
-      const found = items.find((item) => isSameDate(item.pubDate, targetDateStr));
-      if (found) picked.push(found);
+      if (dateStr && !seenDates.has(dateStr) && picked.length < maxCount) {
+        seenDates.add(dateStr);
+        picked.push(item);
+      } else {
+        leftover.push(item);
+      }
+    });
+
+    while (picked.length < maxCount && leftover.length > 0) {
+      picked.push(leftover.shift());
     }
 
     return picked;
@@ -1730,10 +1741,6 @@
     { name: "동아일보", domain: "donga.com" },
     { name: "한겨레", domain: "hani.co.kr" },
     { name: "경향신문", domain: "khan.co.kr" },
-    { name: "KBS", domain: "kbs.co.kr" },
-    { name: "MBC", domain: "imbc.com" },
-    { name: "SBS", domain: "sbs.co.kr" },
-    { name: "YTN", domain: "ytn.co.kr" },
   ];
 
   function extractDomain(url) {
@@ -1752,6 +1759,7 @@
   }
 
   let politicsRawPool = [];
+  let politicsAllPool = [];
   let politicsCategory = "정치";
   let politicsOutletFilter = "all";
 
@@ -1762,7 +1770,40 @@
     });
   }
 
-  // 실제로 결과에 있는 언론사만 버튼으로 보여줍니다 (결과가 0개인 언론사 버튼은 안 보여요)
+  // 네이버 API는 언론사 정보를 따로 주지 않아서, 언론사 버튼을 누르면
+  // "카테고리 + 언론사 이름"으로 다시 검색한 뒤 원문 주소로 그 언론사 기사만 남겨요.
+  async function selectOutlet(outletName) {
+    politicsOutletFilter = outletName;
+    renderOutletFilterChips();
+
+    if (outletName === "all") {
+      politicsRawPool = politicsAllPool;
+      applyPoliticsFiltersAndRender();
+      return;
+    }
+
+    const requestedCategory = politicsCategory;
+    summaryList.innerHTML = "";
+    summaryTitle.textContent = `${outletName} ${requestedCategory} 뉴스를 불러오는 중...`;
+
+    try {
+      const query = `${categoryQueryMap[requestedCategory]} ${outletName}`;
+      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=30`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+
+      if (politicsOutletFilter !== outletName || politicsCategory !== requestedCategory) return;
+      if (document.getElementById("politics-filters").hidden) return;
+
+      politicsRawPool = (data.items || []).filter((item) => matchOutlet(item) === outletName);
+      applyPoliticsFiltersAndRender();
+    } catch (error) {
+      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+      console.error(error);
+    }
+  }
+
+  // 대표 언론사 버튼은 항상 전부 보여줘요.
   function renderOutletFilterChips() {
     const row = document.getElementById("outlet-filter-row");
     row.innerHTML = '<span class="filter-label">언론사</span>';
@@ -1774,11 +1815,7 @@
     allBtn.textContent = "전체";
     row.appendChild(allBtn);
 
-    const availableOutlets = MAJOR_PRESS_OUTLETS.filter((outlet) =>
-      politicsRawPool.some((item) => matchOutlet(item) === outlet.name)
-    );
-
-    availableOutlets.forEach((outlet) => {
+    MAJOR_PRESS_OUTLETS.forEach((outlet) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "filter-chip" + (politicsOutletFilter === outlet.name ? " active" : "");
@@ -1789,9 +1826,7 @@
 
     row.querySelectorAll(".filter-chip").forEach((btn) => {
       btn.addEventListener("click", () => {
-        politicsOutletFilter = btn.dataset.outlet;
-        renderOutletFilterChips();
-        applyPoliticsFiltersAndRender();
+        selectOutlet(btn.dataset.outlet);
       });
     });
   }
@@ -1825,9 +1860,11 @@
     try {
       // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
       // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
-      // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로, 20개를 넉넉히 받아옵니다.
+      // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로 넉넉히 받아오는데,
+      // 정치·경제는 언론사 필터까지 있어서 후보 다양성이 더 중요하니 최대치(30개)로 받아옵니다.
       const query = categoryQueryMap[category];
-      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=20`);
+      const displayCount = OUTLET_FILTER_CATEGORIES.includes(category) ? 30 : 20;
+      const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=${displayCount}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -1842,6 +1879,7 @@
       if (OUTLET_FILTER_CATEGORIES.includes(category)) {
         // 정치·경제는 언론사 필터를 적용할 수 있도록 원본을 저장해두고 따로 그려요.
         politicsRawPool = data.items;
+        politicsAllPool = data.items;
         politicsCategory = category;
         politicsOutletFilter = "all";
         renderOutletFilterChips();
