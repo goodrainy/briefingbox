@@ -514,6 +514,64 @@
     margin-bottom: 4px;
   }
 
+  /* 주식 종목 뉴스: 제목 옆에 "+ / −" 영향 표시 버튼을 붙여요 */
+  .related-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .related-title-row .related-title {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .impact-buttons {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  .impact-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-card-bg);
+    color: var(--color-text-light);
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .impact-btn:hover {
+    border-color: var(--color-primary);
+  }
+
+  /* 긍정(+)은 상승색(빨강), 부정(−)은 하락색(파랑) - 위 주가 표시와 같은 색 규칙이에요 */
+  .impact-btn.up.active {
+    color: #d92d20;
+    background: #fdeceb;
+    border-color: #d92d20;
+  }
+
+  .impact-btn.down.active {
+    color: #175cd3;
+    background: #eaf1ff;
+    border-color: #175cd3;
+  }
+
+  .impact-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-light);
+  }
+
   .related-desc {
     color: var(--color-text-light);
     margin-bottom: 6px;
@@ -1234,9 +1292,15 @@
   }
 
   // 기사 하나에서 비교에 필요한 값(핵심 단어, 글자 조각)을 미리 뽑아둬요.
-  function buildSimilarityProfile(item) {
-    const title = cleanText(item.title);
-    const desc = cleanText(item.description || "");
+  // ignoreTerms: 모든 기사에 공통으로 들어 있어서 비교에서 빼야 하는 말 (예: 종목 뉴스의 종목명).
+  // 이걸 안 빼면 "삼성전자"가 들어간 서로 다른 사건이 전부 비슷하다고 판단돼요.
+  function buildSimilarityProfile(item, ignoreTerms = []) {
+    let title = cleanText(item.title);
+    let desc = cleanText(item.description || "");
+    ignoreTerms.forEach((term) => {
+      title = title.split(term).join(" ");
+      desc = desc.split(term).join(" ");
+    });
     return {
       words: new Set(extractSignificantWords(title)),
       bigrams: bigramSet(title + " " + desc),
@@ -1265,11 +1329,11 @@
   // ("하나라도 비슷하면" 넣으면, 다른 사건 기사가 한 기사와 우연히 비슷한 것만으로
   //  그룹 전체에 딸려 들어가는 문제가 있었어요. 예시 데이터에서 잘못 합쳐진 쌍이
   //  5개 → 0개로 줄어서 평균 방식을 택했어요.)
-  function clusterArticles(pool) {
+  function clusterArticles(pool, ignoreTerms = []) {
     const clusters = [];
 
     pool.forEach((item) => {
-      const profile = buildSimilarityProfile(item);
+      const profile = buildSimilarityProfile(item, ignoreTerms);
 
       const matchedCluster = clusters.find((cluster) => {
         const total = cluster.profiles.reduce((sum, p) => sum + articleSimilarity(profile, p), 0);
@@ -1285,6 +1349,21 @@
     });
 
     return clusters;
+  }
+
+  // 기사 목록을 같은 사건끼리 묶은 뒤, 사건마다 가장 최신 기사 1개씩만 뽑아 최대 count개를 돌려줘요.
+  // (여러 매체가 다룬 사건이 앞에 오도록, 묶인 기사가 많은 순서로 정렬해요)
+  function pickRepresentatives(items, count, ignoreTerms = []) {
+    const clusters = clusterArticles(items, ignoreTerms);
+    clusters.sort((a, b) => b.items.length - a.items.length);
+
+    return clusters.slice(0, count).map((cluster) =>
+      cluster.items.reduce((latest, item) => {
+        const itemTime = new Date(item.pubDate).getTime() || 0;
+        const latestTime = new Date(latest.pubDate).getTime() || 0;
+        return itemTime > latestTime ? item : latest;
+      })
+    );
   }
 
   function pickHotArticles(items, count = 5) {
@@ -1491,9 +1570,44 @@
     document.getElementById("stock-list").appendChild(createStockCard(name));
   }
 
+  // ===============================
+  // 종목 뉴스에 사용자가 직접 표시하는 "주가 영향"(+ 긍정 / − 부정)도 이 브라우저에만 저장해요.
+  // 저장 모양: { "삼성전자": { "기사주소": "up" 또는 "down" } }
+  // ===============================
+  const IMPACT_KEY = "newsBiteStockImpacts";
+
+  function getAllImpacts() {
+    try {
+      return JSON.parse(localStorage.getItem(IMPACT_KEY)) || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function getImpact(stockName, url) {
+    const perStock = getAllImpacts()[stockName];
+    return perStock && perStock[url] ? perStock[url] : null;
+  }
+
+  // value가 null이면 표시를 지워요.
+  function setImpact(stockName, url, value) {
+    const all = getAllImpacts();
+    if (!all[stockName]) all[stockName] = {};
+
+    if (value) all[stockName][url] = value;
+    else delete all[stockName][url];
+
+    localStorage.setItem(IMPACT_KEY, JSON.stringify(all));
+  }
+
   function removeStock(name) {
     const stocks = getStocks().filter((s) => s !== name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
+
+    // 삭제한 종목에 남겨둔 영향 표시도 같이 지워요.
+    const impacts = getAllImpacts();
+    delete impacts[name];
+    localStorage.setItem(IMPACT_KEY, JSON.stringify(impacts));
 
     // 전체를 다시 그리지 않고, 삭제한 종목의 카드 하나만 화면에서 제거해요.
     const card = document.querySelector(`.stock-card[data-stock-name="${CSS.escape(name)}"]`);
@@ -1624,7 +1738,7 @@
 
       if (!loaded) {
         // 주가 기준일자를 넘겨서, 그 날짜에 발행된 뉴스 위주로 찾도록 해요.
-        loadRelatedArticles(stockName, relatedPanel, stockBaseDate);
+        loadRelatedArticles(stockName, relatedPanel, stockBaseDate, stockName);
         loaded = true;
       }
     });
@@ -1851,7 +1965,52 @@
   // (AI 요약 없이, 네이버 검색 결과를 제목 + 스니펫 + 원문 링크 형태로 그대로 보여줌)
   // filterDateStr("YYYYMMDD")이 주어지면, 그 날짜에 발행된 기사를 우선 보여줘요.
   // (주식 종목의 "관련 뉴스"는 주가 기준일자와 맞춰서 보여주기 위함이에요)
-  async function loadRelatedArticles(searchQuery, panelElement, filterDateStr) {
+  // impactStockName(종목명)이 주어지면, 기사마다 "+ / −" 주가 영향 표시 버튼을 붙여요.
+  const STOCK_NEWS_COUNT = 7; // 종목 뉴스는 중복을 없앤 뒤 최대 이 개수만 보여줘요
+
+  // 기사 하나에 붙는 "+ / −" 버튼 한 쌍을 만들어요. 같은 버튼을 다시 누르면 표시가 지워져요.
+  function createImpactButtons(stockName, url) {
+    const wrap = document.createElement("div");
+    wrap.className = "impact-buttons";
+
+    const defs = [
+      { value: "up", label: "+", title: "주가에 긍정적인 영향" },
+      { value: "down", label: "−", title: "주가에 부정적인 영향" },
+    ];
+
+    const buttons = defs.map((def) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `impact-btn ${def.value}`;
+      btn.textContent = def.label;
+      btn.title = def.title;
+      btn.setAttribute("aria-label", def.title);
+      wrap.appendChild(btn);
+      return btn;
+    });
+
+    const refresh = () => {
+      const current = getImpact(stockName, url);
+      buttons.forEach((btn, i) => {
+        const isOn = current === defs[i].value;
+        btn.classList.toggle("active", isOn);
+        btn.setAttribute("aria-pressed", String(isOn));
+      });
+    };
+
+    buttons.forEach((btn, i) => {
+      btn.addEventListener("click", () => {
+        const current = getImpact(stockName, url);
+        setImpact(stockName, url, current === defs[i].value ? null : defs[i].value);
+        refresh();
+      });
+    });
+
+    refresh();
+    return wrap;
+  }
+
+  async function loadRelatedArticles(searchQuery, panelElement, filterDateStr, impactStockName) {
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
@@ -1867,10 +2026,16 @@
 
       let items = data.items || [];
 
-      if (filterDateStr) {
-        // 주식 종목: 주가 기준일자와 정확히 같은 날짜의 뉴스만
-        const sameDateItems = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
-        if (sameDateItems.length > 0) items = sameDateItems;
+      if (impactStockName) {
+        // 주식 종목: 주가 기준일자가 있으면 그 날짜에 발행된 뉴스만 (없으면 전체에서)
+        if (filterDateStr) {
+          const sameDateItems = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
+          if (sameDateItems.length > 0) items = sameDateItems;
+        }
+
+        // 같은 사건을 다룬 중복 기사는 하나로 합치고, 최대 7개만 보여줘요.
+        // (모든 기사에 종목명이 들어 있으니, 종목명은 비교에서 빼요.)
+        items = pickRepresentatives(items, STOCK_NEWS_COUNT, [searchQuery]);
       } else {
         // 일반 기사("관심있어요"): 최근 일주일간 하루에 하나씩만 뽑아 다양하게 보여줌
         items = pickOnePerDayForPastWeek(items);
@@ -1882,6 +2047,13 @@
       }
 
       panelElement.innerHTML = "";
+
+      if (impactStockName) {
+        const hint = document.createElement("p");
+        hint.className = "impact-hint";
+        hint.textContent = "기사가 주가에 준 영향을 직접 표시해보세요. (+ 긍정 / − 부정, 다시 누르면 취소)";
+        panelElement.appendChild(hint);
+      }
 
       items.forEach((relatedItem) => {
         const relatedTitle = cleanText(relatedItem.title);
@@ -1898,6 +2070,17 @@
           <p class="related-desc">${relatedDesc}</p>
           <a class="related-link" href="${relatedUrl}" target="_blank" rel="noopener noreferrer">원문보기 →</a>
         `;
+
+        if (impactStockName) {
+          // 제목을 한 줄(제목 + 영향 버튼)로 감싸요.
+          const titleEl = relatedCard.querySelector(".related-title");
+          const titleRow = document.createElement("div");
+          titleRow.className = "related-title-row";
+          titleEl.replaceWith(titleRow);
+          titleRow.appendChild(titleEl);
+          titleRow.appendChild(createImpactButtons(impactStockName, relatedUrl));
+        }
+
         panelElement.appendChild(relatedCard);
       });
     } catch (error) {
