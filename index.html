@@ -721,15 +721,19 @@
     margin-bottom: 12px;
   }
 
+  /* 종목명은 위, 주가·등락률은 아래 줄로 쌓아서 좁은 화면에서도 글자가 세로로 깨지지 않게 해요 */
   .stock-name-group {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
   }
 
   .stock-name {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
+    white-space: nowrap;
   }
 
   /* 주가를 아직 불러오는 중이거나, 못 불러왔을 때 보여주는 배지 */
@@ -747,20 +751,24 @@
      국내 증시 관례대로 상승은 빨간색, 하락은 파란색으로 표시해요 */
   .stock-price {
     display: flex;
-    align-items: baseline;
-    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
     font-size: 0.85rem;
   }
 
   .stock-price .close-price {
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 800;
     color: var(--color-text);
+    white-space: nowrap;
   }
 
   .stock-price .change-rate {
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 999px;
+    white-space: nowrap;
   }
 
   .stock-price .change-rate.up {
@@ -780,7 +788,8 @@
 
   /* 주가가 몇 월 며칠 기준인지 보여주는 작은 글자 */
   .stock-price .base-date {
-    font-size: 0.72rem;
+    flex-basis: 100%;
+    font-size: 0.75rem;
     color: var(--color-text-light);
   }
 
@@ -808,10 +817,85 @@
 
   /* ---------- 모바일 반응형 ---------- */
   @media (max-width: 700px) {
+    /* 소개글이 먼저 보이고, 그림은 작게 아래에 둬요.
+       (세로 방향에서는 flex 값이 "높이"로 적용돼서 그림 자리가 320px씩 잡혀 있었어요) */
     .hero {
-      flex-direction: column-reverse;
-      padding-top: 40px;
+      flex-direction: column;
+      gap: 24px;
+      padding: 32px 6% 24px;
       text-align: center;
+    }
+
+    .hero-text,
+    .hero-illustration {
+      flex: 0 0 auto;
+    }
+
+    .hero-illustration svg {
+      max-width: 200px;
+    }
+
+    .summary-preview {
+      padding: 18px 14px;
+    }
+
+    /* 기사 카드: 제목 옆 공간을 최대한 넓게 쓰도록
+       "제목 → 키워드 → 언론사·시간 → 관심있어요 버튼" 순서로 세로로 쌓아요. */
+    .news-card {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 8px 10px;
+    }
+
+    .news-card-header {
+      display: contents;
+    }
+
+    .news-thumb {
+      order: 1;
+      width: 44px;
+      height: 44px;
+    }
+
+    .news-title {
+      order: 2;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .keyword-row {
+      order: 3;
+      flex: 0 0 100%;
+      margin-top: 0;
+      padding-left: 0;
+      gap: 5px;
+    }
+
+    .keyword-chip {
+      max-width: 100%;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pub-time {
+      order: 2; /* 키워드 다음 줄로 내려요 */
+      flex: 0 0 100%;
+      padding: 0;
+    }
+
+    .news-card-header .more-btn {
+      order: 4;
+      padding: 6px 12px;
+    }
+
+    .related-panel {
+      order: 5;
+      flex: 0 0 calc(100% - 20px);
+      margin-top: 4px;
     }
 
     .hero-text p.desc {
