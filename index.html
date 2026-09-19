@@ -851,6 +851,42 @@
     color: var(--color-text-light);
   }
 
+    /* "관련 뉴스 보기" 버튼 + 내가 표시한 긍정/부정 개수를 한 줄에 나란히 놓아요 */
+  .stock-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  .impact-summary {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* display:flex가 hidden 속성을 이겨버리지 않도록 확실히 숨김 */
+  .impact-summary[hidden] {
+    display: none;
+  }
+
+  .impact-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .impact-count.up {
+    color: #d92d20;
+    background: #fdeceb;
+  }
+
+  .impact-count.down {
+    color: #175cd3;
+    background: #eaf1ff;
+  }
+
   .stock-remove {
     flex-shrink: 0;
     background: none;
@@ -1600,6 +1636,43 @@
     localStorage.setItem(IMPACT_KEY, JSON.stringify(all));
   }
 
+    // 한 종목에 사용자가 표시한 긍정(+) / 부정(−) 기사 개수를 세요.
+  function countImpacts(stockName) {
+    const perStock = getAllImpacts()[stockName] || {};
+    let up = 0;
+    let down = 0;
+    Object.values(perStock).forEach((value) => {
+      if (value === "up") up++;
+      else if (value === "down") down++;
+    });
+    return { up, down };
+  }
+
+  // 종목 카드에 "+ 긍정 N  − 부정 N" 요약을 그려요. 표시한 기사가 하나도 없으면 숨겨요.
+  function renderImpactSummary(summaryEl, stockName) {
+    const { up, down } = countImpacts(stockName);
+    summaryEl.innerHTML = "";
+
+    if (up + down === 0) {
+      summaryEl.hidden = true;
+      return;
+    }
+
+    summaryEl.hidden = false;
+    summaryEl.title = "내가 표시한 기사 개수";
+
+    const upEl = document.createElement("span");
+    upEl.className = "impact-count up";
+    upEl.textContent = `+ 긍정 ${up}`;
+
+    const downEl = document.createElement("span");
+    downEl.className = "impact-count down";
+    downEl.textContent = `− 부정 ${down}`;
+
+    summaryEl.appendChild(upEl);
+    summaryEl.appendChild(downEl);
+  }
+
   function removeStock(name) {
     const stocks = getStocks().filter((s) => s !== name);
     localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
@@ -1743,8 +1816,18 @@
       }
     });
 
+    // 버튼 옆에, 내가 표시한 긍정/부정 기사 개수를 보여줘요. (표시를 바꿀 때마다 자동으로 갱신돼요)
+    const impactSummaryEl = document.createElement("div");
+    impactSummaryEl.className = "impact-summary";
+    renderImpactSummary(impactSummaryEl, stockName);
+
+    const actions = document.createElement("div");
+    actions.className = "stock-card-actions";
+    actions.appendChild(newsBtn);
+    actions.appendChild(impactSummaryEl);
+
     card.appendChild(top);
-    card.appendChild(newsBtn);
+    card.appendChild(actions);
     card.appendChild(relatedPanel);
     return card;
   }
@@ -2003,6 +2086,10 @@
         const current = getImpact(stockName, url);
         setImpact(stockName, url, current === defs[i].value ? null : defs[i].value);
         refresh();
+
+        // 종목 카드의 "긍정 N · 부정 N" 요약도 같이 갱신해요.
+        const card = wrap.closest(".stock-card");
+        if (card) renderImpactSummary(card.querySelector(".impact-summary"), stockName);
       });
     });
 
