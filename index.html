@@ -1853,6 +1853,28 @@
     });
   }
 
+    // ===============================
+  // 스포츠 카테고리 전용: 제목 필터
+  // "스포츠"로 검색하면 스포츠 매체가 쓴 연예·부고 기사 등도 섞여 나오기 때문에,
+  // 제목에 스포츠 관련 단어가 있는 기사만 남기고, 부고성 단어가 있으면 뺍니다.
+  // (다른 카테고리에는 적용되지 않아요)
+  // ===============================
+  const SPORTS_TITLE_KEYWORDS = [
+    "야구", "축구", "농구", "배구", "골프", "테니스", "탁구", "배드민턴", "핸드볼", "럭비",
+    "수영", "육상", "양궁", "펜싱", "유도", "태권도", "체조", "빙상", "스키", "컬링",
+    "올림픽", "월드컵", "아시안게임", "선수권", "리그", "챔피언", "KBO", "KBL", "MLB", "NBA", "PGA", "LPGA",
+    "경기", "선수", "우승", "결승", "홈런", "투수", "타자", "득점", "골든", "메달", "시즌",
+  ];
+  const SPORTS_EXCLUDE_KEYWORDS = ["부고", "모친상", "부친상", "별세", "빈소", "장례"];
+
+  function filterSportsTitles(items) {
+    return items.filter((item) => {
+      const title = cleanText(item.title);
+      if (SPORTS_EXCLUDE_KEYWORDS.some((word) => title.includes(word))) return false;
+      return SPORTS_TITLE_KEYWORDS.some((word) => title.includes(word));
+    });
+  }
+
   // 선택한 카테고리의 실제 뉴스를 가져와서 요약 카드 목록으로 보여주는 함수
   async function loadCategorySummary(category) {
     preview.classList.add("show");
@@ -1868,7 +1890,8 @@
       // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로 넉넉히 받아오는데,
       // 정치·경제는 언론사 필터까지 있어서 후보 다양성이 더 중요하니 최대치(30개)로 받아옵니다.
       const query = categoryQueryMap[category];
-      const displayCount = OUTLET_FILTER_CATEGORIES.includes(category) ? 30 : 20;
+      const displayCount =
+        OUTLET_FILTER_CATEGORIES.includes(category) || category === "스포츠" ? 30 : 20;
       const response = await fetch(`/api/news?query=${encodeURIComponent(query)}&display=${displayCount}`);
       const data = await response.json();
 
@@ -1892,8 +1915,17 @@
         return;
       }
 
+      let candidates = data.items;
+      if (category === "스포츠") {
+        candidates = filterSportsTitles(data.items);
+        if (candidates.length === 0) {
+          summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
+          return;
+        }
+      }
+
       // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
-      const hotItems = pickHotArticles(data.items, 5);
+      const hotItems = pickHotArticles(candidates, 5);
 
       summaryTitle.textContent = `오늘의 ${category} 이슈 요약`;
 
