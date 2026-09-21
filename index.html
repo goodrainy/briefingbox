@@ -861,6 +861,104 @@
     background: #eaf1ff;
   }
 
+  .more-btn[hidden] {
+    display: none;
+  }
+
+  /* 종목 등록 입력창 아래 안내 문구 (KOSPI 종목만 검색된다는 안내 등) */
+  .stock-hint {
+    margin: -12px 0 22px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--color-text-light);
+  }
+
+  /* "내 판단 돌아보기": 내가 + / −로 표시한 기사와 실제 주가 움직임을 비교해서 보여줘요 */
+  .review-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .review-panel[hidden] {
+    display: none;
+  }
+
+  .review-panel p {
+    margin: 0;
+  }
+
+  .review-summary {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .review-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .review-row-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .review-date {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+  }
+
+  .review-title {
+    font-size: 0.86rem;
+    color: var(--color-text);
+  }
+
+  .review-title:hover {
+    color: var(--color-primary);
+  }
+
+  .review-result {
+    font-size: 0.78rem;
+    color: var(--color-text-light);
+  }
+
+  .review-verdict {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-text-light);
+  }
+
+  /* 맞음은 초록, 빗나감은 주황이에요. (빨강·파랑은 주가 상승·하락 색이라 헷갈리지 않게 피했어요) */
+  .review-verdict.hit {
+    background: #e7f6ec;
+    color: #127a3a;
+  }
+
+  .review-verdict.miss {
+    background: #fef0c7;
+    color: #b54708;
+  }
+
+  .review-note {
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: var(--color-text-light);
+  }
+
   .stock-remove {
     flex-shrink: 0;
     background: none;
@@ -1256,12 +1354,105 @@
     border-top: 1px solid var(--color-border);
   }
 
+  /* 용어 복습 모드: 용어만 보여주고, 뜻을 떠올려본 뒤 눌러서 확인해요 */
+  .review-bar {
+    margin-bottom: 12px;
+  }
+
+  .review-bar[hidden],
+  .review-box[hidden] {
+    display: none;
+  }
+
+  .review-box {
+    margin-bottom: 14px;
+    padding: 20px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    text-align: center;
+  }
+
+  .review-box p {
+    margin-top: 0;
+  }
+
+  .review-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+  }
+
+  .review-term {
+    margin: 22px 0 18px;
+    font-family: "Do Hyeon", "Noto Sans KR", sans-serif;
+    font-size: 1.6rem;
+    word-break: keep-all;
+  }
+
+  .review-meaning {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: #fff;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    text-align: left;
+    word-break: keep-all;
+  }
+
+  .review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .term-pill.large {
+    font-size: 0.9rem;
+    padding: 9px 18px;
+  }
+
   /* ---------- 푸터 ---------- */
   footer {
     text-align: center;
     padding: 26px 6%;
     color: var(--color-text-light);
     font-size: 0.82rem;
+  }
+
+  /* 내 데이터 백업(내보내기·가져오기) */
+  .backup-box {
+    max-width: 520px;
+    margin: 0 auto 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .backup-box p {
+    margin-top: 0;
+  }
+
+  .backup-title {
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 4px;
+  }
+
+  .backup-desc {
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
 
   /* ---------- 모바일 반응형 ---------- */
@@ -1547,9 +1738,13 @@
 
       <!-- 종목 등록 입력창 -->
       <div class="stock-input-row">
-        <input type="text" id="stock-input" placeholder="예: 삼성전자" />
+        <input type="text" id="stock-input" placeholder="예: 삼성전자 (KOSPI 종목)" />
         <button type="button" id="stock-add-btn">등록</button>
       </div>
+      <p class="stock-hint">
+        ※ 유가증권시장(KOSPI) 종목만 검색돼요. 코스닥 종목은 아직 지원하지 않아요.<br />
+        주가는 실시간이 아니라, 장이 끝난 뒤 확정된 가장 최근 거래일 종가예요.
+      </p>
 
       <!-- 등록한 종목이 없을 때 보여주는 안내 문구 -->
       <p class="stock-empty" id="stock-empty">
@@ -1578,6 +1773,13 @@
       <!-- 내가 담아둔 용어 (뜻 + 출처 기사 + 문맥 + 메모) -->
       <div class="dict-block">
         <h3>내 용어사전 <span class="dict-count" id="my-terms-count"></span></h3>
+
+        <!-- 복습 모드: 담아둔 용어를 뜻 가리고 하나씩 넘겨봐요 -->
+        <div class="review-bar" id="review-bar" hidden>
+          <button type="button" class="term-pill primary" id="review-start-btn">🃏 복습하기</button>
+        </div>
+        <div class="review-box" id="review-box" hidden></div>
+
         <input type="text" id="my-terms-filter" class="lookup-input" placeholder="담아둔 용어·기사 검색" />
         <p class="bookmark-empty" id="my-terms-empty" style="margin-top:12px">
           아직 담아둔 용어가 없어요. 뉴스 카드의 "📖 용어 찾기"로 모르는 단어를 담아보세요.
@@ -1596,6 +1798,17 @@
 
   <!-- ================= 푸터 ================= -->
   <footer>
+    <div class="backup-box">
+      <p class="backup-title">💾 내 데이터 백업</p>
+      <p class="backup-desc">
+        찜한 뉴스·종목·용어사전은 이 브라우저에만 저장돼요. 파일로 저장해두면 브라우저를 바꾸거나 데이터를 지운 뒤에도 다시 불러올 수 있어요.
+      </p>
+      <div class="backup-actions">
+        <button type="button" class="term-pill" id="backup-export-btn">📤 내보내기</button>
+        <button type="button" class="term-pill" id="backup-import-btn">📥 가져오기</button>
+      </div>
+      <input type="file" id="backup-file" accept=".json,application/json" hidden />
+    </div>
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
   </footer>
 
@@ -2054,32 +2267,48 @@
     }
   }
 
-  function getImpact(stockName, url) {
-    const perStock = getAllImpacts()[stockName];
-    return perStock && perStock[url] ? perStock[url] : null;
+  // 저장 모양: 예전 버전은 "up" / "down" 글자만 저장했고, 지금은 { v: "up"|"down", d: 기사 날짜(YYYYMMDD), t: 기사 제목 }로 저장해요.
+  // ("내 판단 돌아보기"에서 기사가 나온 날의 주가와 비교하려면 날짜가 필요해요.)
+  // 두 모양을 모두 읽을 수 있게, 꺼낼 때는 항상 이 함수를 거쳐요.
+  function normalizeImpact(raw) {
+    if (!raw) return null;
+    if (typeof raw === "string") return { v: raw, d: "", t: "" };
+    return { v: raw.v, d: raw.d || "", t: raw.t || "" };
   }
 
-  // value가 null이면 표시를 지워요.
-  function setImpact(stockName, url, value) {
+  function getImpact(stockName, url) {
+    const perStock = getAllImpacts()[stockName];
+    const entry = perStock ? normalizeImpact(perStock[url]) : null;
+    return entry ? entry.v : null;
+  }
+
+  // value가 null이면 표시를 지워요. meta({ title, dateStr })는 기사 제목과 날짜를 함께 기록해둬요.
+  function setImpact(stockName, url, value, meta = {}) {
     const all = getAllImpacts();
     if (!all[stockName]) all[stockName] = {};
 
-    if (value) all[stockName][url] = value;
+    if (value) all[stockName][url] = { v: value, d: meta.dateStr || "", t: meta.title || "" };
     else delete all[stockName][url];
 
     localStorage.setItem(IMPACT_KEY, JSON.stringify(all));
   }
 
+  // 한 종목에 내가 표시한 기사 목록 (최근 기사가 위로 와요)
+  function getImpactEntries(stockName) {
+    const perStock = getAllImpacts()[stockName] || {};
+    return Object.entries(perStock)
+      .map(([url, raw]) => ({ url, ...normalizeImpact(raw) }))
+      .filter((entry) => entry.v === "up" || entry.v === "down")
+      .sort((a, b) => b.d.localeCompare(a.d));
+  }
+
   // 한 종목에 사용자가 표시한 긍정(+) / 부정(−) 기사 개수를 세요.
   function countImpacts(stockName) {
-    const perStock = getAllImpacts()[stockName] || {};
-    let up = 0;
-    let down = 0;
-    Object.values(perStock).forEach((value) => {
-      if (value === "up") up++;
-      else if (value === "down") down++;
-    });
-    return { up, down };
+    const entries = getImpactEntries(stockName);
+    return {
+      up: entries.filter((entry) => entry.v === "up").length,
+      down: entries.filter((entry) => entry.v === "down").length,
+    };
   }
 
   // 종목 카드에 "+ 긍정 N  − 부정 N" 요약을 그려요. 표시한 기사가 하나도 없으면 숨겨요.
@@ -2105,6 +2334,205 @@
 
     summaryEl.appendChild(upEl);
     summaryEl.appendChild(downEl);
+  }
+
+  // ===============================
+  // "내 판단 돌아보기": 내가 + / −로 표시한 기사가 나온 날, 실제 주가가 어떻게 움직였는지 비교해요.
+  // - 기사가 나온 날의 등락률과 비교하고, 그날이 주말·휴일이면 다음 거래일의 등락률을 써요.
+  // - 장 마감 뒤에 나온 기사는 다음 날 주가에 반영될 수도 있어서, 어디까지나 참고용이에요.
+  // - 하루치 등락률은 한 번 확정되면 바뀌지 않아서, 이 브라우저에 저장해두고 다시 써요.
+  //   (그래서 두 번째부터는 빨라요. 이 저장분은 백업 파일에는 넣지 않아요.)
+  // ===============================
+  const DAY_CHANGE_KEY = "newsBiteDayChanges";
+  const REVIEW_BTN_TEXT = "📊 내 판단 돌아보기";
+  const VERDICT_LABELS = {
+    hit: "✓ 맞았어요",
+    miss: "✗ 빗나갔어요",
+    flat: "보합",
+    pending: "종가 대기",
+    error: "확인 불가",
+  };
+
+  function getDayChangeCache() {
+    try {
+      return JSON.parse(localStorage.getItem(DAY_CHANGE_KEY)) || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
+  // 아직 데이터가 없으면 { status: "pending" }, 그 밖의 실패는 { status: "error" }
+  async function fetchDayChange(stockName, dateStr, code) {
+    const cached = getDayChangeCache()[stockName];
+    if (cached && cached[dateStr]) return cached[dateStr];
+
+    try {
+      const codePart = code ? `&code=${encodeURIComponent(code)}` : "";
+      const response = await fetch(
+        `/api/stock?name=${encodeURIComponent(stockName)}&date=${dateStr}${codePart}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        return data.noData ? { status: "pending" } : { status: "error" };
+      }
+
+      const result = { baseDate: data.baseDate, changeRate: data.changeRate };
+
+      // 여러 날짜를 동시에 확인하는 중에 서로의 저장분을 덮어쓰지 않도록, 저장 직전에 다시 읽어요.
+      const latest = getDayChangeCache();
+      if (!latest[stockName]) latest[stockName] = {};
+      latest[stockName][dateStr] = result;
+      localStorage.setItem(DAY_CHANGE_KEY, JSON.stringify(latest));
+
+      return result;
+    } catch (error) {
+      console.error(error);
+      return { status: "error" };
+    }
+  }
+
+  // 내가 표시한 방향(mark: "up"/"down")과 그날 등락률을 비교해서 맞았는지 판정해요.
+  function judgeImpact(mark, changeRate) {
+    const rate = Number(String(changeRate).replace(/,/g, ""));
+    if (Number.isNaN(rate)) return "error";
+    if (rate === 0) return "flat";
+    return rate > 0 === (mark === "up") ? "hit" : "miss";
+  }
+
+  // 종목 카드 안의 돌아보기 패널을 그려요. getCode는 종목코드를 돌려주는 함수예요.
+  async function renderStockReview(panel, stockName, getCode) {
+    const token = (panel.reviewToken = (panel.reviewToken || 0) + 1); // 옛 결과가 새 화면을 덮지 않게 하는 번호표
+    const entries = getImpactEntries(stockName);
+    const dated = entries.filter((entry) => entry.d);
+    const skipped = entries.length - dated.length;
+
+    panel.innerHTML = "";
+
+    const summaryEl = document.createElement("p");
+    summaryEl.className = "review-summary";
+    panel.appendChild(summaryEl);
+
+    const rows = dated.map((entry) => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "review-row";
+
+      const top = document.createElement("div");
+      top.className = "review-row-top";
+
+      const dateEl = document.createElement("span");
+      dateEl.className = "review-date";
+      dateEl.textContent = formatBaseDateLabel(entry.d);
+
+      const markEl = document.createElement("span");
+      markEl.className = `impact-count ${entry.v}`;
+      markEl.textContent = entry.v === "up" ? "+ 긍정" : "− 부정";
+
+      const verdictEl = document.createElement("span");
+      verdictEl.className = "review-verdict";
+      verdictEl.textContent = "확인 중...";
+
+      top.appendChild(dateEl);
+      top.appendChild(markEl);
+      top.appendChild(verdictEl);
+
+      const titleEl = document.createElement("a");
+      titleEl.className = "review-title";
+      titleEl.href = entry.url;
+      titleEl.target = "_blank";
+      titleEl.rel = "noopener noreferrer";
+      titleEl.textContent = entry.t || entry.url;
+
+      const resultEl = document.createElement("div");
+      resultEl.className = "review-result";
+
+      rowEl.appendChild(top);
+      rowEl.appendChild(titleEl);
+      rowEl.appendChild(resultEl);
+      panel.appendChild(rowEl);
+
+      return { entry, verdictEl, resultEl, verdict: null };
+    });
+
+    const noteEl = document.createElement("p");
+    noteEl.className = "review-note";
+    noteEl.textContent =
+      "기사가 나온 날(주말·휴일이면 다음 거래일)의 종가 등락률과 비교한 결과예요. 장 마감 뒤에 나온 기사는 다음 날 주가에 반영될 수도 있어서, 참고용으로만 봐주세요." +
+      (skipped > 0 ? ` 예전에 표시해서 날짜가 없는 ${skipped}개는 제외했어요.` : "");
+    panel.appendChild(noteEl);
+
+    function updateSummary() {
+      const judged = rows.filter((row) => row.verdict === "hit" || row.verdict === "miss");
+      const hits = judged.filter((row) => row.verdict === "hit").length;
+      const waiting = rows.filter((row) => !row.verdict).length;
+
+      if (dated.length === 0) {
+        summaryEl.textContent = "날짜가 기록된 표시가 아직 없어요. 기사에 + / −를 눌러보세요.";
+      } else if (judged.length === 0) {
+        summaryEl.textContent = waiting > 0 ? "주가를 확인하는 중..." : "아직 판정할 수 있는 기사가 없어요.";
+      } else {
+        const percent = Math.round((hits / judged.length) * 100);
+        summaryEl.textContent = `내 판단 적중 ${hits} / ${judged.length} (${percent}%)${waiting > 0 ? " · 확인 중..." : ""}`;
+      }
+    }
+
+    function paintRow(row, result) {
+      let verdict;
+      const rate = Number(String(result.changeRate).replace(/,/g, ""));
+
+      if (result.status || Number.isNaN(rate)) {
+        verdict = result.status || "error";
+        row.resultEl.textContent =
+          verdict === "pending" ? "아직 이 날짜의 종가 데이터가 없어요." : "주가를 확인하지 못했어요.";
+      } else {
+        verdict = judgeImpact(row.entry.v, result.changeRate);
+        const arrow = rate > 0 ? "▲" : rate < 0 ? "▼" : "-";
+        const sign = rate > 0 ? "+" : "";
+        row.resultEl.textContent = `${formatBaseDateLabel(result.baseDate)} 종가 ${arrow} ${sign}${result.changeRate}%`;
+      }
+
+      row.verdict = verdict;
+      row.verdictEl.textContent = VERDICT_LABELS[verdict] || "";
+      row.verdictEl.className = `review-verdict ${verdict}`;
+    }
+
+    updateSummary();
+
+    // 같은 날짜는 한 번만 조회하고, 동시에 3개까지만 요청해요.
+    const dates = [...new Set(dated.map((entry) => entry.d))];
+    let next = 0;
+
+    async function worker() {
+      while (next < dates.length) {
+        const date = dates[next++];
+        const result = await fetchDayChange(stockName, date, getCode());
+        if (token !== panel.reviewToken) return;
+
+        rows.filter((row) => row.entry.d === date).forEach((row) => paintRow(row, result));
+        updateSummary();
+      }
+    }
+
+    await Promise.all([worker(), worker(), worker()]);
+  }
+
+  // 종목 카드의 "+ 긍정 N − 부정 N" 요약과 "내 판단 돌아보기" 버튼을 최신 상태로 맞춰요.
+  function updateStockCardImpact(card, stockName) {
+    renderImpactSummary(card.querySelector(".impact-summary"), stockName);
+
+    const { up, down } = countImpacts(stockName);
+    const reviewBtn = card.querySelector(".review-btn");
+    const reviewPanel = card.querySelector(".review-panel");
+
+    reviewBtn.hidden = up + down === 0;
+
+    if (up + down === 0) {
+      reviewPanel.hidden = true;
+      reviewBtn.textContent = REVIEW_BTN_TEXT;
+    } else if (!reviewPanel.hidden) {
+      reviewPanel.refresh(); // 돌아보기가 열려 있으면 바뀐 표시를 바로 반영
+    }
   }
 
   function removeStock(name) {
@@ -2150,6 +2578,12 @@
       const response = await fetch(`/api/stock?name=${encodeURIComponent(stockName)}`);
       const data = await response.json();
 
+      // 404 = 종목을 못 찾은 경우예요. 대부분 KOSPI 종목이 아니어서 생기니 그렇게 안내해요.
+      if (response.status === 404) {
+        priceEl.innerHTML = '<span class="stock-price-placeholder">KOSPI에서 찾을 수 없는 종목이에요</span>';
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "요청에 실패했습니다.");
       }
@@ -2164,15 +2598,19 @@
       const arrow = direction === "up" ? "▲" : direction === "down" ? "▼" : "-";
       const sign = changeRateNum > 0 ? "+" : ""; // 마이너스는 숫자 자체에 이미 포함되어 있어요
 
+      // 전일 대비 변동 금액 (예: "1,200원"). 방향은 화살표가 알려주니 숫자는 절댓값만 써요.
+      const changeNum = Number(String(data.change).replace(/,/g, ""));
+      const changeAmountText = Number.isNaN(changeNum) ? "" : `${formatKrxNumber(Math.abs(changeNum))}원 `;
+
       priceEl.innerHTML = `
         <span class="stock-price">
           <span class="close-price">${formatKrxNumber(data.closePrice)}원</span>
-          <span class="change-rate ${direction}">${arrow} ${sign}${data.changeRate}%</span>
+          <span class="change-rate ${direction}">${arrow} ${changeAmountText}(${sign}${data.changeRate}%)</span>
           <span class="base-date">(${formatBaseDateLabel(data.baseDate)} 기준)</span>
         </span>
       `;
 
-      if (onLoaded) onLoaded(data.baseDate);
+      if (onLoaded) onLoaded(data.baseDate, data.code);
     } catch (error) {
       priceEl.innerHTML = '<span class="stock-price-placeholder">주가 정보를 불러올 수 없어요</span>';
       console.error(error);
@@ -2203,10 +2641,12 @@
 
     // 주가 기준일자(예: "20260916")를 저장해뒀다가, 관련 뉴스도 같은 날짜 기준으로 찾을 때 써요.
     let stockBaseDate = null;
+    let stockCode = null; // "내 판단 돌아보기"에서 과거 주가를 조회할 때 같이 보내면 더 빨라요
 
     // 카드가 만들어지자마자 바로 주가를 불러옵니다.
-    loadStockPrice(stockName, priceEl, (baseDate) => {
+    loadStockPrice(stockName, priceEl, (baseDate, code) => {
       stockBaseDate = baseDate;
+      stockCode = code;
     });
 
     const removeBtn = document.createElement("button");
@@ -2253,16 +2693,42 @@
     // 버튼 옆에, 내가 표시한 긍정/부정 기사 개수를 보여줘요. (표시를 바꿀 때마다 자동으로 갱신돼요)
     const impactSummaryEl = document.createElement("div");
     impactSummaryEl.className = "impact-summary";
-    renderImpactSummary(impactSummaryEl, stockName);
+
+    // "내 판단 돌아보기": 표시한 기사가 하나라도 있을 때만 나타나는 버튼과 결과 패널이에요.
+    const reviewBtn = document.createElement("button");
+    reviewBtn.type = "button";
+    reviewBtn.className = "more-btn review-btn";
+    reviewBtn.textContent = REVIEW_BTN_TEXT;
+
+    const reviewPanel = document.createElement("div");
+    reviewPanel.className = "review-panel";
+    reviewPanel.hidden = true;
+    reviewPanel.refresh = () => renderStockReview(reviewPanel, stockName, () => stockCode);
+
+    reviewBtn.addEventListener("click", () => {
+      if (!reviewPanel.hidden) {
+        reviewPanel.hidden = true;
+        reviewBtn.textContent = REVIEW_BTN_TEXT;
+        return;
+      }
+
+      reviewPanel.hidden = false;
+      reviewBtn.textContent = "📊 돌아보기 접기";
+      reviewPanel.refresh();
+    });
 
     const actions = document.createElement("div");
     actions.className = "stock-card-actions";
     actions.appendChild(newsBtn);
+    actions.appendChild(reviewBtn);
     actions.appendChild(impactSummaryEl);
 
     card.appendChild(top);
     card.appendChild(actions);
+    card.appendChild(reviewPanel);
     card.appendChild(relatedPanel);
+
+    updateStockCardImpact(card, stockName); // 긍정/부정 개수와 돌아보기 버튼의 처음 상태를 맞춰요
     return card;
   }
 
@@ -2992,6 +3458,10 @@
 
   function renderMyTerms() {
     const list = getSavedTerms();
+
+    // 담아둔 용어가 있을 때만 "복습하기"를 보여줘요. 전부 지우면 열려 있던 복습도 닫아요.
+    document.getElementById("review-bar").hidden = list.length === 0;
+    if (list.length === 0 && reviewState) closeReview();
     const filter = (document.getElementById("my-terms-filter").value || "").trim().toLowerCase();
     const listEl = document.getElementById("my-terms-list");
     const emptyEl = document.getElementById("my-terms-empty");
@@ -3056,6 +3526,131 @@
       }
     );
   }
+
+  // ----- 복습 모드 -----
+  // 담아둔 용어를 순서 없이 하나씩 보여줘요. 뜻은 가려둔 채 먼저 떠올려보고, "뜻 보기"로 확인한 뒤
+  // "알았어요 / 헷갈려요"로 표시해요. 끝나면 헷갈린 용어만 다시 볼 수 있어요. (결과는 저장하지 않아요)
+  const reviewBox = document.getElementById("review-box");
+  let reviewState = null; // { deck, index, revealed, known, missed }
+
+  function shuffleList(list) {
+    const copy = list.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function makeReviewButton(text, className, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `term-pill ${className}`.trim();
+    btn.textContent = text;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function startReview(terms) {
+    reviewState = { deck: shuffleList(terms), index: 0, revealed: false, known: 0, missed: [] };
+    reviewBox.hidden = false;
+    renderReview();
+  }
+
+  function closeReview() {
+    reviewState = null;
+    reviewBox.hidden = true;
+    reviewBox.innerHTML = "";
+  }
+
+  function nextReviewCard(wasKnown, saved) {
+    if (wasKnown) reviewState.known++;
+    else reviewState.missed.push(saved);
+
+    reviewState.index++;
+    reviewState.revealed = false;
+    renderReview();
+  }
+
+  function renderReview() {
+    reviewBox.innerHTML = "";
+    if (!reviewState) return;
+
+    const { deck, index, revealed, known, missed } = reviewState;
+
+    const progress = document.createElement("div");
+    progress.className = "review-progress";
+    const progressText = document.createElement("span");
+    progress.appendChild(progressText);
+    progress.appendChild(makeReviewButton(index >= deck.length ? "닫기" : "그만하기", "", closeReview));
+    reviewBox.appendChild(progress);
+
+    // 끝까지 다 봤을 때
+    if (index >= deck.length) {
+      progressText.textContent = "복습 끝!";
+
+      const result = document.createElement("div");
+      result.className = "review-term";
+      result.textContent = `알았어요 ${known}개 · 헷갈려요 ${missed.length}개`;
+      reviewBox.appendChild(result);
+
+      const actions = document.createElement("div");
+      actions.className = "review-actions";
+      if (missed.length > 0) {
+        actions.appendChild(makeReviewButton("헷갈린 용어만 다시", "primary large", () => startReview(missed)));
+      }
+      actions.appendChild(makeReviewButton("처음부터 다시", "large", () => startReview(getSavedTerms())));
+      reviewBox.appendChild(actions);
+      return;
+    }
+
+    const saved = deck[index];
+    progressText.textContent = `복습 ${index + 1} / ${deck.length}`;
+
+    const termEl = document.createElement("div");
+    termEl.className = "review-term";
+    termEl.textContent = saved.term;
+    reviewBox.appendChild(termEl);
+
+    const actions = document.createElement("div");
+    actions.className = "review-actions";
+
+    if (!revealed) {
+      const hint = document.createElement("p");
+      hint.className = "term-hint";
+      hint.textContent = "뜻을 먼저 떠올려본 다음 눌러보세요.";
+      reviewBox.appendChild(hint);
+
+      actions.appendChild(
+        makeReviewButton("뜻 보기", "primary large", () => {
+          reviewState.revealed = true;
+          renderReview();
+        })
+      );
+    } else {
+      const meaningEl = document.createElement("div");
+      meaningEl.className = "review-meaning";
+      meaningEl.textContent = saved.meaning;
+      if (saved.memo) {
+        const memoEl = document.createElement("div");
+        memoEl.className = "term-source-label";
+        memoEl.style.marginTop = "8px";
+        memoEl.textContent = `📝 내 메모: ${saved.memo}`;
+        meaningEl.appendChild(memoEl);
+      }
+      reviewBox.appendChild(meaningEl);
+
+      actions.appendChild(makeReviewButton("✓ 알았어요", "primary large", () => nextReviewCard(true, saved)));
+      actions.appendChild(makeReviewButton("✗ 헷갈려요", "large", () => nextReviewCard(false, saved)));
+    }
+
+    reviewBox.appendChild(actions);
+  }
+
+  document.getElementById("review-start-btn").addEventListener("click", () => {
+    const list = getSavedTerms();
+    if (list.length > 0) startReview(list);
+  });
 
   const dictLookup = createLookupBox();
   document.getElementById("dict-lookup-host").appendChild(dictLookup.element);
@@ -3188,7 +3783,10 @@
         }
       });
     } else if (action === "impact") {
-      header.appendChild(createImpactButtons(stockName, url));
+      // 기사 제목·날짜도 함께 넘겨서, "내 판단 돌아보기"에서 그날 주가와 비교할 수 있게 해요.
+      const pubDateObj = new Date(item.pubDate);
+      const articleDateStr = Number.isNaN(pubDateObj.getTime()) ? "" : toDateStr(pubDateObj);
+      header.appendChild(createImpactButtons(stockName, url, { title, dateStr: articleDateStr }));
     }
 
     // 기사 요약 (네이버가 주는 발췌문)
@@ -3293,7 +3891,7 @@
   const STOCK_NEWS_COUNT = 7; // 종목 뉴스는 중복을 없앤 뒤 최대 이 개수만 보여줘요
 
   // 기사 하나에 붙는 "+ / −" 버튼 한 쌍을 만들어요. 같은 버튼을 다시 누르면 표시가 지워져요.
-  function createImpactButtons(stockName, url) {
+  function createImpactButtons(stockName, url, meta = {}) {
     const wrap = document.createElement("div");
     wrap.className = "impact-buttons";
 
@@ -3325,14 +3923,21 @@
     buttons.forEach((btn, i) => {
       btn.addEventListener("click", () => {
         const current = getImpact(stockName, url);
-        setImpact(stockName, url, current === defs[i].value ? null : defs[i].value);
+        setImpact(stockName, url, current === defs[i].value ? null : defs[i].value, meta);
         refresh();
 
-        // 종목 카드의 "긍정 N · 부정 N" 요약도 같이 갱신해요.
+        // 종목 카드의 "긍정 N · 부정 N" 요약과 "내 판단 돌아보기"도 같이 갱신해요.
         const card = wrap.closest(".stock-card");
-        if (card) renderImpactSummary(card.querySelector(".impact-summary"), stockName);
+        if (card) updateStockCardImpact(card, stockName);
       });
     });
+
+    // 예전 버전에서 날짜 없이 저장해둔 표시는, 그 기사가 다시 보일 때 날짜와 제목을 채워둬요.
+    const savedForStock = getAllImpacts()[stockName];
+    const savedEntry = savedForStock ? normalizeImpact(savedForStock[url]) : null;
+    if (savedEntry && !savedEntry.d && meta.dateStr) {
+      setImpact(stockName, url, savedEntry.v, meta);
+    }
 
     refresh();
     return wrap;
@@ -3388,345 +3993,4 @@
         panelElement.appendChild(
           createArticleCard(
             relatedItem,
-            impactStockName ? { action: "impact", stockName: impactStockName } : { action: "none" }
-          )
-        );
-      });
-    } catch (error) {
-      panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오지 못했어요.</p>';
-      console.error(error);
-    }
-  }
-
-  // ===============================
-  // 정치·경제 카테고리 전용: 대표 언론사별 필터
-  // (다른 카테고리 화면/로직에는 영향을 주지 않아요)
-  // ===============================
-  const OUTLET_FILTER_CATEGORIES = ["정치", "경제"];
-
-  // 언론사 필터 버튼으로 보여줄 대표 언론사 (아래 도메인 표에 있는 이름이어야 해요)
-  const MAJOR_PRESS_OUTLETS = ["연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문"];
-
-  // 네이버 API는 언론사 이름을 주지 않아서, 기사 원문 주소(URL)의 도메인으로 언론사를 알아내요.
-  // 표에 없는 도메인은 "언론사 모름"으로 처리돼요. (새 언론사는 여기에 한 줄씩 추가하면 돼요)
-  const OUTLET_DOMAIN_MAP = {
-    "yna.co.kr": "연합뉴스",
-    "yonhapnewstv.co.kr": "연합뉴스TV",
-    "chosun.com": "조선일보",
-    "biz.chosun.com": "조선비즈",
-    "sports.chosun.com": "스포츠조선",
-    "joongang.co.kr": "중앙일보",
-    "donga.com": "동아일보",
-    "sports.donga.com": "스포츠동아",
-    "hani.co.kr": "한겨레",
-    "khan.co.kr": "경향신문",
-    "kmib.co.kr": "국민일보",
-    "hankookilbo.com": "한국일보",
-    "munhwa.com": "문화일보",
-    "segye.com": "세계일보",
-    "seoul.co.kr": "서울신문",
-    "mk.co.kr": "매일경제",
-    "hankyung.com": "한국경제",
-    "sedaily.com": "서울경제",
-    "edaily.co.kr": "이데일리",
-    "mt.co.kr": "머니투데이",
-    "fnnews.com": "파이낸셜뉴스",
-    "asiae.co.kr": "아시아경제",
-    "heraldcorp.com": "헤럴드경제",
-    "news1.kr": "뉴스1",
-    "newsis.com": "뉴시스",
-    "nocutnews.co.kr": "노컷뉴스",
-    "ohmynews.com": "오마이뉴스",
-    "pressian.com": "프레시안",
-    "dailian.co.kr": "데일리안",
-    "newdaily.co.kr": "뉴데일리",
-    "ajunews.com": "아주경제",
-    "sisajournal.com": "시사저널",
-    "kbs.co.kr": "KBS",
-    "imbc.com": "MBC",
-    "sbs.co.kr": "SBS",
-    "ytn.co.kr": "YTN",
-    "jtbc.co.kr": "JTBC",
-    "mbn.co.kr": "MBN",
-    "tvchosun.com": "TV조선",
-    "ichannela.com": "채널A",
-    "etnews.com": "전자신문",
-    "zdnet.co.kr": "ZDNet Korea",
-    "dt.co.kr": "디지털타임스",
-    "sportsseoul.com": "스포츠서울",
-    "osen.co.kr": "OSEN",
-    "starnewskorea.com": "스타뉴스",
-    "xportsnews.com": "엑스포츠뉴스",
-  };
-
-  function extractDomain(url) {
-    try {
-      return new URL(url).hostname.replace(/^www\./, "");
-    } catch (error) {
-      return "";
-    }
-  }
-
-  // 원문 주소의 도메인으로 언론사 이름을 찾아요. (모르는 도메인이면 null)
-  // "sports.chosun.com"이면 먼저 "sports.chosun.com"을, 없으면 "chosun.com"을 찾는 식으로
-  // 더 구체적인 도메인부터 확인해서 계열 매체(조선비즈 등)가 본지로 섞이지 않게 해요.
-  function matchOutlet(item) {
-    const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
-    const domain = extractDomain(url);
-    if (!domain) return null;
-
-    const parts = domain.split(".");
-    for (let i = 0; i < parts.length - 1; i++) {
-      const candidate = parts.slice(i).join(".");
-      if (OUTLET_DOMAIN_MAP[candidate]) return OUTLET_DOMAIN_MAP[candidate];
-    }
-    return null;
-  }
-
-  // ===============================
-  // 오늘 / 어제 보기
-  // 네이버 검색 API에는 날짜 지정 기능이 없어서, "어제"는 관련도순(sim)으로 넉넉히(100개)
-  // 받아온 뒤 어제 발행된 기사만 남기는 방식이에요. 그래서 어제 기사가 적게 나올 수 있어요.
-  // ===============================
-  let newsDayMode = "today";
-  let currentCategory = null;
-  let loadCounter = 0; // 빠르게 버튼을 여러 번 눌렀을 때 늦게 도착한 옛 응답을 무시하기 위한 번호표
-
-  function isYesterday(pubDateStr) {
-    const d = new Date(pubDateStr);
-    if (Number.isNaN(d.getTime())) return false;
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return toDateStr(d) === toDateStr(yesterday);
-  }
-
-  function dayLabel() {
-    return newsDayMode === "yesterday" ? "어제의" : "오늘의";
-  }
-
-  async function fetchNewsPool(query, todayDisplayCount) {
-    const url =
-      newsDayMode === "yesterday"
-        ? `/api/news?query=${encodeURIComponent(query)}&display=100&sort=sim`
-        : `/api/news?query=${encodeURIComponent(query)}&display=${todayDisplayCount}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
-
-    const items = data.items || [];
-    return newsDayMode === "yesterday" ? items.filter((item) => isYesterday(item.pubDate)) : items;
-  }
-
-  let politicsRawPool = [];
-  let politicsAllPool = [];
-  let politicsCategory = "정치";
-  let politicsOutletFilter = "all";
-
-  function filterPoliticsPool(pool) {
-    return pool.filter((item) => {
-      if (politicsOutletFilter !== "all" && matchOutlet(item) !== politicsOutletFilter) return false;
-      return true;
-    });
-  }
-
-  // 네이버 API는 언론사 정보를 따로 주지 않아서, 언론사 버튼을 누르면
-  // "카테고리 + 언론사 이름"으로 다시 검색한 뒤 원문 주소로 그 언론사 기사만 남겨요.
-  async function selectOutlet(outletName) {
-    politicsOutletFilter = outletName;
-    renderOutletFilterChips();
-
-    if (outletName === "all") {
-      loadCounter++;
-      politicsRawPool = politicsAllPool;
-      applyPoliticsFiltersAndRender();
-      return;
-    }
-
-    const token = ++loadCounter;
-    const requestedCategory = politicsCategory;
-    summaryList.innerHTML = "";
-    summaryTitle.textContent = `${outletName} ${requestedCategory} 뉴스를 불러오는 중...`;
-
-    try {
-      const query = `${categoryQueryMap[requestedCategory]} ${outletName}`;
-      const items = await fetchNewsPool(query, 30);
-      if (token !== loadCounter) return;
-
-      politicsRawPool = items.filter((item) => matchOutlet(item) === outletName);
-      applyPoliticsFiltersAndRender();
-    } catch (error) {
-      if (token !== loadCounter) return;
-      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
-      console.error(error);
-    }
-  }
-
-  // 대표 언론사 버튼은 항상 전부 보여줘요.
-  function renderOutletFilterChips() {
-    const row = document.getElementById("outlet-filter-row");
-    row.innerHTML = '<span class="filter-label">언론사</span>';
-
-    const allBtn = document.createElement("button");
-    allBtn.type = "button";
-    allBtn.className = "filter-chip" + (politicsOutletFilter === "all" ? " active" : "");
-    allBtn.dataset.outlet = "all";
-    allBtn.textContent = "전체";
-    row.appendChild(allBtn);
-
-    MAJOR_PRESS_OUTLETS.forEach((outletName) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "filter-chip" + (politicsOutletFilter === outletName ? " active" : "");
-      btn.dataset.outlet = outletName;
-      btn.textContent = outletName;
-      row.appendChild(btn);
-    });
-
-    row.querySelectorAll(".filter-chip").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        selectOutlet(btn.dataset.outlet);
-      });
-    });
-  }
-
-  function applyPoliticsFiltersAndRender() {
-    const filtered = filterPoliticsPool(politicsRawPool);
-    const hotItems = pickHotArticles(filtered, 5);
-
-    summaryList.innerHTML = "";
-
-    if (hotItems.length === 0) {
-      summaryTitle.textContent = `조건에 맞는 ${politicsCategory} 뉴스를 찾지 못했어요`;
-      return;
-    }
-
-    summaryTitle.textContent = `${dayLabel()} ${politicsCategory} 이슈 요약`;
-    hotItems.forEach((item) => {
-      summaryList.appendChild(createNewsCard(item));
-    });
-  }
-
-  // ===============================
-  // 스포츠 카테고리 전용: 제목 필터
-  // "스포츠"로 검색하면 스포츠 매체가 쓴 연예·부고 기사 등도 섞여 나오기 때문에,
-  // 제목에 스포츠 관련 단어가 있는 기사만 남기고, 부고성 단어가 있으면 뺍니다.
-  // (다른 카테고리에는 적용되지 않아요)
-  // ===============================
-  const SPORTS_TITLE_KEYWORDS = [
-    "야구", "축구", "농구", "배구", "골프", "테니스", "탁구", "배드민턴", "핸드볼", "럭비",
-    "수영", "육상", "양궁", "펜싱", "유도", "태권도", "체조", "빙상", "스키", "컬링",
-    "올림픽", "월드컵", "아시안게임", "선수권", "리그", "챔피언", "KBO", "KBL", "MLB", "NBA", "PGA", "LPGA",
-    "경기", "선수", "우승", "결승", "홈런", "투수", "타자", "득점", "골든", "메달", "시즌",
-  ];
-  const SPORTS_EXCLUDE_KEYWORDS = ["부고", "모친상", "부친상", "별세", "빈소", "장례"];
-
-  function filterSportsTitles(items) {
-    return items.filter((item) => {
-      const title = cleanText(item.title);
-      if (SPORTS_EXCLUDE_KEYWORDS.some((word) => title.includes(word))) return false;
-      return SPORTS_TITLE_KEYWORDS.some((word) => title.includes(word));
-    });
-  }
-
-  // 선택한 카테고리의 실제 뉴스를 가져와서 요약 카드 목록으로 보여주는 함수
-  async function loadCategorySummary(category) {
-    const token = ++loadCounter;
-    currentCategory = category;
-    const isOutletCategory = OUTLET_FILTER_CATEGORIES.includes(category);
-
-    preview.classList.add("show");
-    summaryTitle.textContent = `${category} 뉴스를 불러오는 중...`;
-    summaryList.innerHTML = "";
-
-    // 정치·경제 카테고리일 때만 언론사 필터 UI를 보여줘요.
-    document.getElementById("politics-filters").hidden = !isOutletCategory;
-    if (isOutletCategory) {
-      politicsCategory = category;
-      politicsOutletFilter = "all";
-      politicsAllPool = [];
-      politicsRawPool = [];
-      renderOutletFilterChips();
-    }
-
-    try {
-      // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
-      // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
-      // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로 넉넉히 받아오는데,
-      // 정치·경제(언론사 필터)와 스포츠(제목 필터)는 걸러지는 기사가 많아서 최대치(30개)로 받아옵니다.
-      const query = categoryQueryMap[category];
-      const displayCount = isOutletCategory || category === "스포츠" ? 30 : 20;
-      const items = await fetchNewsPool(query, displayCount);
-      if (token !== loadCounter) return;
-
-      if (items.length === 0) {
-        summaryTitle.textContent =
-          newsDayMode === "yesterday"
-            ? `어제 ${category} 기사를 충분히 찾지 못했어요`
-            : `${category} 관련 뉴스를 찾지 못했어요`;
-        return;
-      }
-
-      if (isOutletCategory) {
-        // 정치·경제는 언론사 필터를 적용할 수 있도록 원본을 저장해두고 따로 그려요.
-        politicsRawPool = items;
-        politicsAllPool = items;
-        applyPoliticsFiltersAndRender();
-        return;
-      }
-
-      let candidates = items;
-      if (category === "스포츠") {
-        candidates = filterSportsTitles(items);
-        if (candidates.length === 0) {
-          summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
-          return;
-        }
-      }
-
-      // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
-      const hotItems = pickHotArticles(candidates, 5);
-
-      summaryTitle.textContent = `${dayLabel()} ${category} 이슈 요약`;
-
-      // 뉴스 하나하나를 "더 보기"가 달린 카드로 만들어서 목록에 추가
-      hotItems.forEach((item) => {
-        summaryList.appendChild(createNewsCard(item));
-      });
-    } catch (error) {
-      if (token !== loadCounter) return;
-      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
-      console.error(error);
-    }
-  }
-
-  // 카테고리 버튼들에 클릭 이벤트 연결
-  chips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      chips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-
-      const category = chip.getAttribute("data-category");
-      loadCategorySummary(category);
-    });
-  });
-
-  // 오늘 / 어제 버튼: 누르면 지금 선택된 카테고리를 해당 날짜 기준으로 다시 불러와요.
-  const dayChips = document.querySelectorAll("#day-filter-row .filter-chip");
-  dayChips.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (newsDayMode === btn.dataset.day) return;
-
-      newsDayMode = btn.dataset.day;
-      dayChips.forEach((b) => b.classList.toggle("active", b === btn));
-      if (currentCategory) loadCategorySummary(currentCategory);
-    });
-  });
-
-  // 페이지를 열자마자, 이전에 저장해둔 찜 목록 / 관심 종목 목록을 화면에 보여줍니다.
-  renderBookmarks();
-  renderStocks();
-</script>
-
-</body>
-</html>
+            impactStockName ? { action: "impact", stockName:
