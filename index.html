@@ -851,7 +851,7 @@
     color: var(--color-text-light);
   }
 
-    /* "관련 뉴스 보기" 버튼 + 내가 표시한 긍정/부정 개수를 한 줄에 나란히 놓아요 */
+  /* "관련 뉴스 보기" 버튼 + 내가 표시한 긍정/부정 개수를 한 줄에 나란히 놓아요 */
   .stock-card-actions {
     display: flex;
     flex-wrap: wrap;
@@ -899,6 +899,397 @@
 
   .stock-remove:hover {
     color: #d64545;
+  }
+
+  /* ---------- 용어사전 ---------- */
+  /* 용어사전 관련 요소는 패딩·테두리를 크기에 포함해서 계산해요(칸이 밖으로 삐져나오지 않게). */
+  .dict-inner,
+  .dict-inner *,
+  .term-panel,
+  .term-panel * {
+    box-sizing: border-box;
+  }
+
+  .term-card p,
+  .term-panel p {
+    margin-top: 0;
+  }
+
+  .dict-section {
+    background: #fff;
+    padding: 60px 6% 80px;
+  }
+
+  .dict-inner {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .dict-inner h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .dict-inner .sub {
+    color: var(--color-text-light);
+    margin-bottom: 28px;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .dict-block {
+    margin-top: 34px;
+  }
+
+  .dict-block h3 {
+    font-size: 1.15rem;
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+
+  .dict-count {
+    font-family: "Noto Sans KR", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+  }
+
+  .lookup-form {
+    display: flex;
+    gap: 8px;
+  }
+
+  .lookup-input {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 0.92rem;
+    padding: 10px 14px;
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-text);
+  }
+
+  /* 입력칸의 기본 가로 길이 때문에 좁은 화면에서 옆으로 삐져나오지 않도록, 남는 자리만 채우게 해요 */
+  .lookup-form .lookup-input {
+    width: 0;
+  }
+
+  #my-terms-filter {
+    width: 100%;
+  }
+
+  .lookup-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .lookup-search {
+    flex-shrink: 0;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+
+  .lookup-search:hover {
+    background: var(--color-primary-dark);
+  }
+
+  .lookup-results {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .lookup-encyc {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .lookup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lookup-write {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .lookup-write[hidden] {
+    display: none;
+  }
+
+  .term-pill {
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-card-bg);
+    color: var(--color-text-light);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .term-pill:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .term-pill:disabled {
+    cursor: default;
+    opacity: 0.75;
+  }
+
+  .term-pill.primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+  }
+
+  .term-pill.primary:disabled {
+    background: #eaf1ff;
+    border-color: #eaf1ff;
+    color: var(--color-primary-dark);
+  }
+
+  .term-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .term-card-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .term-name {
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .term-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eaf1ff;
+    color: var(--color-primary-dark);
+  }
+
+  .term-spacer {
+    flex: 1;
+  }
+
+  .term-meaning {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin-bottom: 8px;
+    word-break: keep-all;
+  }
+
+  .term-source-label {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+    margin-bottom: 8px;
+  }
+
+  .term-source-label a {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .term-status {
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+  }
+
+  .term-remove {
+    background: none;
+    border: none;
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+
+  .term-remove:hover {
+    color: #d64545;
+  }
+
+  /* 이 용어를 어느 기사의 어떤 문장에서 만났는지 보여주는 기록 */
+  .term-sources {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 10px 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .term-sources-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-text-light);
+  }
+
+  .term-source-article {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .term-source-article:hover {
+    color: var(--color-primary);
+  }
+
+  .term-source-meta {
+    font-size: 0.74rem;
+    color: var(--color-text-light);
+  }
+
+  .term-context {
+    margin-top: 4px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--color-primary);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.84rem;
+    line-height: 1.6;
+  }
+
+  .term-context mark {
+    background: #fff3cd;
+    padding: 0 2px;
+    border-radius: 3px;
+  }
+
+  .my-terms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  /* 뉴스 카드 안의 "📖 용어 찾기" 버튼, 용어 칩, 단어 고르기 패널 */
+  .term-btn,
+  .term-chip {
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .term-btn {
+    border: 1px dashed var(--color-primary);
+    background: #fff;
+    color: var(--color-primary-dark);
+  }
+
+  .term-chip {
+    border: none;
+    background: #fff3cd;
+    color: #92720a;
+  }
+
+  .term-btn:hover,
+  .term-chip:hover {
+    filter: brightness(0.96);
+  }
+
+  .related-item .term-btn {
+    margin-left: 10px;
+  }
+
+  .term-panel {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .term-panel[hidden] {
+    display: none;
+  }
+
+  .term-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-light);
+    margin-bottom: 8px;
+  }
+
+  .term-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    font-size: 0.86rem;
+    line-height: 1.9;
+  }
+
+  .term-words + .term-words {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .term-words.title-words {
+    font-weight: 700;
+  }
+
+  .term-word {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    color: var(--color-text);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 0 4px;
+    cursor: pointer;
+  }
+
+  .term-word:hover {
+    background: #eaf1ff;
+  }
+
+  /* 이미 사전에 있는(기본 용어 또는 내가 담은) 단어는 파랗게 표시해요 */
+  .term-word.known {
+    color: var(--color-primary);
+    text-decoration: underline dotted;
+  }
+
+  .term-plain {
+    padding: 0 4px;
+  }
+
+  .term-panel .lookup-box {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
   }
 
   /* ---------- 푸터 ---------- */
@@ -992,6 +1383,23 @@
       margin-top: 4px;
     }
 
+    /* 용어 찾기 패널은 관심있어요 버튼 아래, 관련 기사 위에 한 줄 전체로 펼쳐져요 */
+    .news-card > .term-panel {
+      order: 4;
+      flex: 0 0 100%;
+      margin-top: 0;
+    }
+
+    .term-btn,
+    .term-chip {
+      padding: 2px 8px;
+      font-size: 0.72rem;
+    }
+
+    .dict-section {
+      padding: 40px 5% 60px;
+    }
+
     .hero-text p.desc {
       margin-left: auto;
       margin-right: auto;
@@ -1001,8 +1409,16 @@
       grid-template-columns: 1fr;
     }
 
+    /* 메뉴가 3개라 한 줄에 다 안 들어가면 로고 아래 줄로 내려가요. 글자가 세로로 깨지지 않게 줄바꿈은 막아요. */
     header {
-      padding: 16px 5%;
+      flex-wrap: wrap;
+      gap: 2px 8px;
+      padding: 12px 5%;
+    }
+
+    .logo,
+    .nav-link {
+      white-space: nowrap;
     }
 
     .header-nav {
@@ -1010,7 +1426,7 @@
     }
 
     .nav-link {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       padding: 4px;
     }
   }
@@ -1027,6 +1443,7 @@
     <nav class="header-nav">
       <button type="button" class="nav-link" data-target="news">뉴스 요약</button>
       <button type="button" class="nav-link" data-target="stock">사회 뉴스로 보는 주식</button>
+      <button type="button" class="nav-link" data-target="dict">용어사전</button>
     </nav>
   </header>
 
@@ -1168,6 +1585,39 @@
     </div>
   </section>
 
+  <!-- ================= "용어사전" 모드 (뉴스를 읽다 만난 용어를 출처 기사와 함께 담아두는 곳) ================= -->
+  <section class="dict-section" id="dict-mode" hidden>
+    <div class="dict-inner">
+      <h2>용어사전</h2>
+      <p class="sub">
+        뉴스를 읽다 모르는 말이 나오면 담아두세요. 어느 기사에서 만난 말인지도 함께 기록돼요.
+      </p>
+
+      <!-- 용어 검색 + 등록 (기본 용어 → 네이버 백과사전 → 직접 쓰기 순서로 찾아요) -->
+      <div class="dict-block">
+        <h3>용어 찾기·등록</h3>
+        <div id="dict-lookup-host"></div>
+      </div>
+
+      <!-- 내가 담아둔 용어 (뜻 + 출처 기사 + 문맥 + 메모) -->
+      <div class="dict-block">
+        <h3>내 용어사전 <span class="dict-count" id="my-terms-count"></span></h3>
+        <input type="text" id="my-terms-filter" class="lookup-input" placeholder="담아둔 용어·기사 검색" />
+        <p class="bookmark-empty" id="my-terms-empty" style="margin-top:12px">
+          아직 담아둔 용어가 없어요. 뉴스 카드의 "📖 용어 찾기"로 모르는 단어를 담아보세요.
+        </p>
+        <div class="my-terms-list" id="my-terms-list"></div>
+      </div>
+
+      <!-- 기본으로 들어 있는 용어 -->
+      <div class="dict-block">
+        <h3>기본 용어 둘러보기</h3>
+        <div class="filter-row" id="builtin-category-row"></div>
+        <div class="my-terms-list" id="builtin-terms-list"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= 푸터 ================= -->
   <footer>
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
@@ -1197,14 +1647,22 @@
   const summaryList = document.getElementById("summary-list");
 
   // ===============================
-  // 화면 전환: "뉴스한입"(기본 홈 화면) ↔ "사회 뉴스로 보는 주식"
+  // 화면 전환: "뉴스한입"(기본 홈 화면) ↔ "사회 뉴스로 보는 주식" ↔ "용어사전"
   // ===============================
   const newsModeEl = document.getElementById("news-mode");
   const stockModeEl = document.getElementById("stock-mode");
+  const dictModeEl = document.getElementById("dict-mode");
 
   function showMode(mode) {
     newsModeEl.hidden = mode !== "news";
     stockModeEl.hidden = mode !== "stock";
+    dictModeEl.hidden = mode !== "dict";
+
+    // 용어사전 화면을 열 때마다 최신 저장 내용으로 다시 그려요.
+    if (mode === "dict") {
+      renderMyTerms();
+      renderBuiltinList();
+    }
   }
 
   // 로고 클릭 → 기본 홈 화면(뉴스한입)으로 이동
@@ -1636,7 +2094,7 @@
     localStorage.setItem(IMPACT_KEY, JSON.stringify(all));
   }
 
-    // 한 종목에 사용자가 표시한 긍정(+) / 부정(−) 기사 개수를 세요.
+  // 한 종목에 사용자가 표시한 긍정(+) / 부정(−) 기사 개수를 세요.
   function countImpacts(stockName) {
     const perStock = getAllImpacts()[stockName] || {};
     let up = 0;
@@ -1870,6 +2328,806 @@
     }
   });
 
+  // ===============================
+  // 용어사전
+  //
+  // [용어 찾는 순서] 기본 용어(아래 목록) → 네이버 백과사전(/api/dictionary) → 직접 뜻 쓰기
+  // [저장] 로그인 없이 이 브라우저의 localStorage에만 저장돼요. 저장할 때
+  //        "어느 기사의 어떤 문장에서 만난 용어인지(출처 기사 + 문맥)"도 함께 기록해요.
+  //        같은 용어를 다른 기사에서 또 만나면, 출처가 하나씩 더 쌓여요.
+  // ===============================
+  const BUILTIN_TERMS = [
+    // ----- 주식 -----
+    { term: "코스피", category: "주식", aliases: ["KOSPI"], meaning: "한국거래소 유가증권시장에 상장된 대표 기업들의 주가를 종합해 나타낸 지수예요. 우리나라 증시 전체 분위기를 볼 때 가장 먼저 보는 숫자예요." },
+    { term: "코스닥", category: "주식", aliases: ["KOSDAQ"], meaning: "중소·벤처·기술 기업 중심의 주식시장이에요. 코스피보다 등락 폭이 큰 편이에요." },
+    { term: "시가총액", category: "주식", aliases: ["시총"], meaning: "주가에 발행된 주식 수를 곱한 값으로, 시장이 평가하는 기업의 몸집이에요." },
+    { term: "배당", category: "주식", aliases: [], meaning: "기업이 번 이익의 일부를 주식을 가진 사람(주주)에게 나눠주는 것이에요." },
+    { term: "PER(주가수익비율)", category: "주식", aliases: ["PER", "주가수익비율"], meaning: "주가를 주당순이익으로 나눈 값이에요. 이익에 비해 주가가 비싼지 싼지를 가늠할 때 써요." },
+    { term: "PBR(주가순자산비율)", category: "주식", aliases: ["PBR", "주가순자산비율"], meaning: "주가를 주당순자산으로 나눈 값이에요. 1보다 낮으면 회사의 장부상 가치보다 싸게 거래된다는 뜻이에요." },
+    { term: "공매도", category: "주식", aliases: [], meaning: "주식을 빌려서 먼저 팔고, 값이 내려가면 싸게 사서 갚아 차익을 노리는 거래예요. 주가가 내려갈 것에 거는 방식이에요." },
+    { term: "상장폐지", category: "주식", aliases: [], meaning: "주식시장에서 거래할 자격을 잃고 종목이 퇴출되는 것이에요." },
+    { term: "유상증자", category: "주식", aliases: [], meaning: "기업이 돈이 필요해서 새 주식을 발행해 투자자에게 파는 것이에요. 기존 주주의 지분 가치가 줄 수 있어요." },
+    { term: "자사주", category: "주식", aliases: ["자기주식"], meaning: "기업이 자기 회사 주식을 사들인 것이에요. 이걸 없애면(소각) 주식 수가 줄어 한 주의 가치가 올라가는 효과가 있어요." },
+    { term: "서킷브레이커", category: "주식", aliases: ["서킷 브레이커"], meaning: "증시가 급락할 때 시장 전체의 거래를 잠시 멈추는 제도예요. 투자자가 진정할 시간을 주려는 장치예요." },
+    { term: "외국인 순매수", category: "주식", aliases: ["순매수", "외국인순매수"], meaning: "외국인 투자자가 판 것보다 산 것이 더 많은 상태예요." },
+    { term: "영업이익", category: "주식", aliases: [], meaning: "기업이 본업으로 번 이익이에요. 매출에서 원가와 운영비를 뺀 값이에요." },
+    { term: "어닝 서프라이즈", category: "주식", aliases: ["어닝서프라이즈", "어닝"], meaning: "기업의 실제 실적이 시장 예상보다 훨씬 좋게 나오는 것이에요. 반대는 어닝 쇼크예요." },
+    { term: "상한가·하한가", category: "주식", aliases: ["상한가", "하한가"], meaning: "하루에 오르내릴 수 있는 최대 폭까지 오르거나 내린 가격이에요." },
+
+    // ----- 경제 -----
+    { term: "기준금리", category: "경제", aliases: [], meaning: "중앙은행(한국은행)이 정하는 정책 금리예요. 은행 예금·대출 금리의 기준이 돼요." },
+    { term: "인플레이션", category: "경제", aliases: ["인플레"], meaning: "물가가 계속 오르는 현상이에요. 같은 돈으로 살 수 있는 물건이 줄어요." },
+    { term: "디플레이션", category: "경제", aliases: ["디플레"], meaning: "물가가 계속 내리는 현상이에요. 소비와 투자가 움츠러들 수 있어요." },
+    { term: "환율", category: "경제", aliases: [], meaning: "우리 돈과 외국 돈을 바꾸는 비율이에요. 원/달러 환율이 오르면 원화 가치가 떨어진 거예요." },
+    { term: "소비자물가지수(CPI)", category: "경제", aliases: ["소비자물가지수", "소비자물가", "CPI"], meaning: "소비자가 자주 사는 상품과 서비스의 가격 변화를 지수로 나타낸 것이에요." },
+    { term: "생산자물가지수", category: "경제", aliases: ["생산자물가"], meaning: "기업이 만들어 파는 물건의 가격 변화를 나타낸 지수예요. 나중에 소비자 물가에 영향을 줘요." },
+    { term: "GDP(국내총생산)", category: "경제", aliases: ["GDP", "국내총생산"], meaning: "한 나라 안에서 일정 기간 새로 만들어진 물건과 서비스의 총가치예요. 경제 규모와 성장을 보는 대표 지표예요." },
+    { term: "경상수지", category: "경제", aliases: [], meaning: "한 나라가 다른 나라와 상품·서비스·소득을 거래해서 번 돈과 쓴 돈의 차이예요." },
+    { term: "무역수지", category: "경제", aliases: [], meaning: "수출액에서 수입액을 뺀 값이에요. 플러스면 흑자, 마이너스면 적자예요." },
+    { term: "스태그플레이션", category: "경제", aliases: [], meaning: "경기는 나쁜데 물가는 계속 오르는 상황이에요." },
+    { term: "양적완화", category: "경제", aliases: [], meaning: "중앙은행이 국채 등을 사들여 시중에 돈을 푸는 정책이에요. 경기를 살리려고 쓰는 방법이에요." },
+    { term: "국채", category: "경제", aliases: [], meaning: "나라가 돈을 빌리려고 발행하는 채권이에요. 국채 금리는 다른 금리의 기준이 돼요." },
+    { term: "가계부채", category: "경제", aliases: [], meaning: "가계(가정)가 금융기관에서 빌린 돈의 총합이에요." },
+    { term: "재정적자", category: "경제", aliases: [], meaning: "정부가 걷은 돈보다 쓴 돈이 더 많은 상태예요." },
+    { term: "유류세", category: "경제", aliases: [], meaning: "휘발유·경유 등에 붙는 세금이에요. 유류세를 내리면 기름값이 낮아져요." },
+
+    // ----- 정치·시사 -----
+    { term: "국정감사", category: "정치·시사", aliases: ["국감"], meaning: "국회가 정부 기관이 일을 잘했는지 점검하는 활동이에요. 매년 정기국회 기간에 이뤄져요." },
+    { term: "예산안", category: "정치·시사", aliases: [], meaning: "정부가 다음 해에 얼마를 걷고 쓸지를 담아 국회에 내는 계획안이에요. 국회가 심의해서 확정해요." },
+    { term: "추경(추가경정예산)", category: "정치·시사", aliases: ["추경", "추가경정예산"], meaning: "이미 정해진 예산을 고쳐서 추가로 짜는 예산이에요. 경기 침체나 재난 때 편성해요." },
+    { term: "본회의", category: "정치·시사", aliases: [], meaning: "국회의원 전원이 참석하는 회의예요. 법안을 최종 표결하는 곳이에요." },
+    { term: "상임위원회", category: "정치·시사", aliases: ["상임위"], meaning: "국회에서 분야별(법사위, 기재위 등)로 법안과 정책을 먼저 심사하는 위원회예요." },
+    { term: "발의", category: "정치·시사", aliases: [], meaning: "국회의원이나 정부가 새 법안이나 고치는 법안을 국회에 내는 것이에요." },
+    { term: "필리버스터", category: "정치·시사", aliases: ["무제한토론", "무제한 토론"], meaning: "소수 의견 쪽이 오래 발언해서 표결을 늦추는 합법적인 방식이에요. 국회법에서는 '무제한 토론'이라고 해요." },
+    { term: "거부권", category: "정치·시사", aliases: ["재의요구"], meaning: "대통령이 국회를 통과한 법안에 동의하지 않고 다시 논의하라고 돌려보내는 권한이에요." },
+    { term: "탄핵소추", category: "정치·시사", aliases: ["탄핵"], meaning: "대통령 등 고위 공직자가 직무상 중대한 잘못을 했을 때 국회가 파면을 요구하는 절차예요. 최종 판단은 헌법재판소가 해요." },
+    { term: "헌법재판소", category: "정치·시사", aliases: ["헌재"], meaning: "법률이 헌법에 어긋나는지, 탄핵이 정당한지 등을 판단하는 헌법 전문 재판기관이에요." },
+    { term: "여당·야당", category: "정치·시사", aliases: ["여당", "야당"], meaning: "여당은 정권을 잡고 정부를 이끄는 정당이고, 야당은 그렇지 않은 정당이에요." },
+    { term: "원내대표", category: "정치·시사", aliases: [], meaning: "국회 안에서 정당 소속 의원들을 대표하고, 국회 운영과 협상을 맡는 사람이에요." },
+    { term: "청문회", category: "정치·시사", aliases: [], meaning: "국회가 공직 후보자나 중요한 사안에 대해 의견을 듣고 따져 묻는 절차예요." },
+    { term: "국정조사", category: "정치·시사", aliases: [], meaning: "국회가 특정 사건이나 의혹의 진상을 직접 조사하는 것이에요." },
+    { term: "국무회의", category: "정치·시사", aliases: [], meaning: "대통령과 국무총리, 장관들이 모여 정부의 중요 정책을 논의하는 회의예요." },
+    { term: "총선", category: "정치·시사", aliases: [], meaning: "국회의원을 뽑는 전국 선거예요. 4년마다 열려요." },
+    { term: "지방선거", category: "정치·시사", aliases: [], meaning: "시장·도지사·교육감과 지방의회 의원을 뽑는 선거예요. 4년마다 열려요." },
+    { term: "비례대표", category: "정치·시사", aliases: [], meaning: "정당이 받은 득표율에 따라 의석을 나눠 갖는 국회의원이에요. 지역구 의원은 그 지역에서 가장 많이 득표한 사람이에요." },
+    { term: "여론조사", category: "정치·시사", aliases: [], meaning: "일부 사람에게 물어서 전체 의견을 추정하는 조사예요. 표본 수, 응답률, 오차 범위를 함께 봐야 해요." },
+    { term: "특검(특별검사)", category: "정치·시사", aliases: ["특검", "특별검사"], meaning: "검찰 수사가 어렵거나 신뢰받기 어려운 사건을 따로 임명한 특별검사가 수사하는 제도예요." },
+  ];
+
+  const BUILTIN_CATEGORIES = ["전체", "주식", "경제", "정치·시사"];
+  const TERM_KEY = "newsBiteTerms";
+
+  // ----- 저장소 (localStorage) -----
+  function getSavedTerms() {
+    try {
+      return JSON.parse(localStorage.getItem(TERM_KEY)) || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function setSavedTerms(list) {
+    localStorage.setItem(TERM_KEY, JSON.stringify(list));
+  }
+
+  // 비교할 때 띄어쓰기와 대소문자를 무시해요. ("서킷 브레이커" = "서킷브레이커")
+  function normalizeTerm(text) {
+    return String(text).replace(/\s+/g, "").toLowerCase();
+  }
+
+  function isAsciiOnly(text) {
+    return /^[\x00-\x7f]+$/.test(text);
+  }
+
+  function escapeRegExp(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function findSavedTerm(term) {
+    const key = normalizeTerm(term);
+    return getSavedTerms().find((saved) => normalizeTerm(saved.term) === key) || null;
+  }
+
+  function hasSameSource(savedTerm, source) {
+    return savedTerm.sources.some(
+      (s) => s.articleUrl === source.articleUrl && s.context === source.context
+    );
+  }
+
+  // 용어를 저장해요. 이미 있는 용어면 "출처 기사"만 하나 더 추가해요.
+  // 돌려주는 값: "created"(새로 저장) / "source-added"(출처만 추가) / "exists"(이미 있음)
+  function saveTermEntry({ term, meaning, meaningSource, source }) {
+    const list = getSavedTerms();
+    let entry = list.find((saved) => normalizeTerm(saved.term) === normalizeTerm(term));
+    let result = "exists";
+
+    if (!entry) {
+      entry = {
+        term,
+        meaning,
+        meaningSource,
+        memo: "",
+        sources: [],
+        savedAt: new Date().toISOString(),
+      };
+      list.unshift(entry);
+      result = "created";
+    }
+
+    if (source && source.articleUrl && !hasSameSource(entry, source)) {
+      entry.sources.push({ ...source, addedAt: new Date().toISOString() });
+      if (result === "exists") result = "source-added";
+    }
+
+    setSavedTerms(list);
+    return result;
+  }
+
+  function removeSavedTerm(term) {
+    setSavedTerms(getSavedTerms().filter((saved) => normalizeTerm(saved.term) !== normalizeTerm(term)));
+  }
+
+  function updateTermMemo(term, memo) {
+    const list = getSavedTerms();
+    const target = list.find((saved) => normalizeTerm(saved.term) === normalizeTerm(term));
+    if (!target) return;
+
+    target.memo = memo;
+    setSavedTerms(list);
+  }
+
+  // ----- 기본 용어 검색 -----
+  // 점수: 3 = 이름이 똑같음, 2 = 입력한 말 안에 용어가 들어 있음("기준금리를" ⊃ "기준금리"),
+  //       1 = 용어 안에 입력한 말이 들어 있음("금리" ⊂ "기준금리")
+  // 영어 약어(PER, GDP 등)는 "super" 같은 다른 단어와 헷갈리지 않게 똑같을 때만 맞는 걸로 봐요.
+  function matchBuiltin(query, minScore) {
+    const q = normalizeTerm(query);
+    if (q.length < 2) return [];
+
+    const scored = [];
+    BUILTIN_TERMS.forEach((entry) => {
+      let score = 0;
+      [entry.term, ...(entry.aliases || [])].forEach((name) => {
+        const n = normalizeTerm(name);
+        if (n === q) score = Math.max(score, 3);
+        else if (!isAsciiOnly(n) && q.includes(n)) score = Math.max(score, 2);
+        else if (!isAsciiOnly(n) && n.includes(q)) score = Math.max(score, 1);
+      });
+      if (score >= minScore) scored.push({ entry, score });
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map((s) => s.entry);
+  }
+
+  function searchBuiltin(query) {
+    return matchBuiltin(query, 1);
+  }
+
+  function isKnownTerm(word) {
+    return matchBuiltin(word, 2).length > 0 || Boolean(findSavedTerm(word));
+  }
+
+  // 글 안에 사전에 있는 용어가 들어 있는지 찾아요. (뉴스 카드의 "📖 용어 칩"에 써요)
+  function textHasName(text, name) {
+    if (isAsciiOnly(name)) {
+      const pattern = new RegExp("(^|[^A-Za-z])" + escapeRegExp(name) + "($|[^A-Za-z])", "i");
+      return pattern.test(text);
+    }
+    return text.includes(name);
+  }
+
+  function findKnownTermsInText(text, max) {
+    const candidates = BUILTIN_TERMS.map((entry) => ({
+      term: entry.term,
+      names: [entry.term, ...(entry.aliases || [])],
+    }));
+    getSavedTerms().forEach((saved) => {
+      if (!candidates.some((c) => c.term === saved.term)) {
+        candidates.push({ term: saved.term, names: [saved.term] });
+      }
+    });
+
+    const found = [];
+    for (const candidate of candidates) {
+      if (found.length >= max) break;
+      const hit = candidate.names.find((name) => textHasName(text, name));
+      if (hit) found.push({ term: candidate.term, matched: hit });
+    }
+    return found;
+  }
+
+  // ----- 글 다루기 -----
+  // 문장 단위로 자르기 (마침표·물음표·느낌표 뒤에서)
+  function splitSentences(text) {
+    return (text || "").match(/[^.!?…]+[.!?…]*\s*/g)?.map((s) => s.trim()).filter(Boolean) || [];
+  }
+
+  // 용어가 들어 있는 문장을 찾아요. 요약문 → 제목 순서로 찾아요.
+  function findContextSentence(name, title, description) {
+    const inDescription = splitSentences(description).find((s) => s.includes(name));
+    if (inDescription) return inDescription;
+    if ((title || "").includes(name)) return title;
+    return title || "";
+  }
+
+  function shorten(text, maxLength) {
+    return text.length > maxLength ? text.slice(0, maxLength).trim() + "…" : text;
+  }
+
+  function stripTags(text) {
+    return cleanText(text || "").replace(/<[^>]+>/g, "").trim();
+  }
+
+  function formatShortDate(dateStr) {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+
+  // 문장 속에서 용어를 노랗게 강조해서 붙여요. (글자를 그대로 넣지 않고 DOM으로 만들어서 안전해요)
+  function appendHighlighted(parent, text, term) {
+    const pieces = term ? text.split(term) : [text];
+    pieces.forEach((piece, index) => {
+      if (index > 0) {
+        const mark = document.createElement("mark");
+        mark.textContent = term;
+        parent.appendChild(mark);
+      }
+      parent.appendChild(document.createTextNode(piece));
+    });
+  }
+
+  // ----- 네이버 백과사전 -----
+  async function fetchEncycCandidates(query) {
+    const response = await fetch(`/api/dictionary?query=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+    return data.items || [];
+  }
+
+  // ----- 용어 카드 (검색 결과 / 기본 용어 목록에서 "사전에 담기" 버튼이 붙은 카드) -----
+  // entry: { term, meaning, tag, meaningSource: { kind, label, url } }
+  // source: 이 용어를 만난 기사 정보(없으면 null)
+  function createTermResultCard(entry, source) {
+    const card = document.createElement("div");
+    card.className = "term-card";
+
+    const top = document.createElement("div");
+    top.className = "term-card-top";
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "term-name";
+    nameEl.textContent = entry.term;
+    top.appendChild(nameEl);
+
+    if (entry.tag) {
+      const tagEl = document.createElement("span");
+      tagEl.className = "term-tag";
+      tagEl.textContent = entry.tag;
+      top.appendChild(tagEl);
+    }
+
+    const meaningEl = document.createElement("p");
+    meaningEl.className = "term-meaning";
+    meaningEl.textContent = entry.meaning;
+
+    const sourceLabel = document.createElement("p");
+    sourceLabel.className = "term-source-label";
+    if (entry.meaningSource.url) {
+      const link = document.createElement("a");
+      link.href = entry.meaningSource.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = `${entry.meaningSource.label} ↗`;
+      sourceLabel.appendChild(link);
+    } else {
+      sourceLabel.textContent = entry.meaningSource.label;
+    }
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "term-pill primary";
+
+    const existing = findSavedTerm(entry.term);
+    if (existing && (!source || hasSameSource(existing, source))) {
+      saveBtn.textContent = "✓ 담겨 있어요";
+      saveBtn.disabled = true;
+    } else if (existing && source) {
+      saveBtn.textContent = "➕ 이 기사를 출처로 추가";
+    } else {
+      saveBtn.textContent = "📖 사전에 담기";
+    }
+
+    saveBtn.addEventListener("click", () => {
+      const result = saveTermEntry({
+        term: entry.term,
+        meaning: entry.meaning,
+        meaningSource: entry.meaningSource,
+        source,
+      });
+      saveBtn.textContent = result === "created" ? "✓ 담았어요" : result === "source-added" ? "✓ 출처를 추가했어요" : "✓ 담겨 있어요";
+      saveBtn.disabled = true;
+      renderMyTerms();
+    });
+
+    card.appendChild(top);
+    card.appendChild(meaningEl);
+    card.appendChild(sourceLabel);
+    card.appendChild(saveBtn);
+    return card;
+  }
+
+  // 검색어에 대한 결과를 container에 그려요. (기본 용어 → 백과사전 → 직접 쓰기)
+  function renderLookupResults(container, query, source) {
+    container.innerHTML = "";
+
+    const matches = searchBuiltin(query).slice(0, 3);
+    matches.forEach((entry) => {
+      container.appendChild(
+        createTermResultCard(
+          {
+            term: entry.term,
+            meaning: entry.meaning,
+            tag: entry.category,
+            meaningSource: { kind: "builtin", label: "뉴스한입 기본 용어" },
+          },
+          source
+        )
+      );
+    });
+
+    const encycArea = document.createElement("div");
+    encycArea.className = "lookup-encyc";
+    container.appendChild(encycArea);
+
+    const loadEncyc = async () => {
+      encycArea.innerHTML = '<p class="summary-status">네이버 백과사전에서 찾는 중...</p>';
+
+      try {
+        const items = await fetchEncycCandidates(query);
+        encycArea.innerHTML = "";
+
+        if (items.length === 0) {
+          encycArea.innerHTML =
+            '<p class="summary-status">백과사전에서 찾지 못했어요. 아래 "직접 뜻 쓰기"로 직접 적어 담아보세요.</p>';
+          return;
+        }
+
+        // 제목이 검색어로 시작하는 결과를 앞으로 보내요.
+        const q = normalizeTerm(query);
+        items.sort(
+          (a, b) =>
+            Number(normalizeTerm(stripTags(b.title)).startsWith(q)) -
+            Number(normalizeTerm(stripTags(a.title)).startsWith(q))
+        );
+
+        items.slice(0, 3).forEach((item) => {
+          encycArea.appendChild(
+            createTermResultCard(
+              {
+                term: query,
+                meaning: shorten(stripTags(item.description), 220) || "(설명이 비어 있어요)",
+                tag: "백과사전",
+                meaningSource: {
+                  kind: "encyc",
+                  label: `네이버 백과사전 · ${stripTags(item.title)}`,
+                  url: item.link,
+                },
+              },
+              source
+            )
+          );
+        });
+      } catch (error) {
+        encycArea.innerHTML =
+          '<p class="summary-status">백과사전을 불러오지 못했어요. (NAVER API HUB에 백과사전 API가 추가됐는지 확인해주세요)</p>';
+        console.error(error);
+      }
+    };
+
+    const actions = document.createElement("div");
+    actions.className = "lookup-actions";
+
+    if (matches.length === 0) {
+      loadEncyc();
+    } else {
+      const moreBtn = document.createElement("button");
+      moreBtn.type = "button";
+      moreBtn.className = "term-pill";
+      moreBtn.textContent = "🔎 네이버 백과사전에서도 찾기";
+      moreBtn.addEventListener("click", () => {
+        moreBtn.hidden = true;
+        loadEncyc();
+      });
+      actions.appendChild(moreBtn);
+    }
+
+    // 직접 뜻 쓰기: 백과사전에 없는 말이나, 내 말로 적고 싶을 때
+    const writeToggle = document.createElement("button");
+    writeToggle.type = "button";
+    writeToggle.className = "term-pill";
+    writeToggle.textContent = "✍️ 직접 뜻 쓰기";
+    actions.appendChild(writeToggle);
+    container.appendChild(actions);
+
+    const writeBox = document.createElement("div");
+    writeBox.className = "lookup-write";
+    writeBox.hidden = true;
+
+    const writeInput = document.createElement("textarea");
+    writeInput.className = "bookmark-memo";
+    writeInput.placeholder = "이 용어의 뜻을 내 말로 적어보세요";
+
+    const writeSave = document.createElement("button");
+    writeSave.type = "button";
+    writeSave.className = "term-pill primary";
+    writeSave.textContent = "📖 이 뜻으로 담기";
+    writeSave.addEventListener("click", () => {
+      const text = writeInput.value.trim();
+      if (!text) {
+        writeInput.focus();
+        return;
+      }
+      saveTermEntry({ term: query, meaning: text, meaningSource: { kind: "custom", label: "직접 작성" }, source });
+      writeSave.textContent = "✓ 담았어요";
+      writeSave.disabled = true;
+      renderMyTerms();
+    });
+
+    writeBox.appendChild(writeInput);
+    writeBox.appendChild(writeSave);
+    container.appendChild(writeBox);
+
+    writeToggle.addEventListener("click", () => {
+      writeBox.hidden = !writeBox.hidden;
+      if (!writeBox.hidden) writeInput.focus();
+    });
+  }
+
+  // 검색창 + 결과 영역 한 벌. (용어사전 화면과 뉴스 카드의 용어 찾기 패널이 같이 써요)
+  function createLookupBox() {
+    const element = document.createElement("div");
+    element.className = "lookup-box";
+
+    const form = document.createElement("div");
+    form.className = "lookup-form";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "lookup-input";
+    input.placeholder = "알고 싶은 용어를 입력하세요 (예: 기준금리)";
+
+    const searchBtn = document.createElement("button");
+    searchBtn.type = "button";
+    searchBtn.className = "lookup-search";
+    searchBtn.textContent = "찾기";
+
+    const results = document.createElement("div");
+    results.className = "lookup-results";
+
+    let lastSource = null;
+
+    // source를 넘기면 그 기사가 출처로 기록돼요. 안 넘기면 직전 값을 그대로 써요.
+    function run(query, source) {
+      const q = (query || "").trim();
+      if (!q) return;
+
+      if (source !== undefined) lastSource = source;
+      input.value = q;
+      renderLookupResults(results, q, lastSource);
+    }
+
+    searchBtn.addEventListener("click", () => run(input.value));
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        run(input.value);
+      }
+    });
+
+    form.appendChild(input);
+    form.appendChild(searchBtn);
+    element.appendChild(form);
+    element.appendChild(results);
+    return { element, run };
+  }
+
+  // ----- 뉴스 카드 / 관련 기사 안의 "📖 용어 찾기" -----
+  // 기사 제목과 요약문을 단어별로 눌러볼 수 있게 펼치고, 누른 단어를 찾아 담게 해줘요.
+  // info: { title, description, url, outlet, pubDate }
+  function cleanTermWord(rawToken) {
+    const word = stripParticle(rawToken.replace(/[^\p{L}\p{N}]/gu, ""));
+    return word.length >= 2 && /\p{L}/u.test(word) ? word : "";
+  }
+
+  function appendWordButtons(container, text, contextText, onPick) {
+    text.split(/\s+/).filter(Boolean).forEach((rawToken) => {
+      const word = cleanTermWord(rawToken);
+
+      if (!word) {
+        const plain = document.createElement("span");
+        plain.className = "term-plain";
+        plain.textContent = rawToken;
+        container.appendChild(plain);
+        return;
+      }
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "term-word";
+      btn.textContent = rawToken;
+      if (isKnownTerm(word)) btn.classList.add("known");
+      btn.addEventListener("click", () => onPick(word, contextText));
+      container.appendChild(btn);
+    });
+  }
+
+  function createTermFinder(info) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "term-btn";
+    button.textContent = "📖 용어 찾기";
+
+    const panel = document.createElement("div");
+    panel.className = "term-panel";
+    panel.hidden = true;
+
+    let lookupBox = null;
+
+    const buildSource = (context) => ({
+      articleTitle: info.title,
+      articleUrl: info.url,
+      outlet: info.outlet || "",
+      pubDate: info.pubDate || "",
+      context: shorten(context || info.title, 160),
+    });
+
+    // 패널은 처음 열 때 한 번만 만들어요. (저장된 용어가 바뀌면 파란 표시가 어긋날 수 있어서 열 때마다 새로 그려도 되지만, 가볍게 한 번만 만들어요)
+    function build() {
+      if (lookupBox) return;
+
+      const hint = document.createElement("p");
+      hint.className = "term-hint";
+      hint.textContent = "알고 싶은 단어를 눌러보세요. 파란 밑줄은 사전에 이미 있는 말이에요.";
+
+      lookupBox = createLookupBox();
+      const pick = (word, context) => lookupBox.run(word, buildSource(context));
+
+      const titleBox = document.createElement("div");
+      titleBox.className = "term-words title-words";
+      appendWordButtons(titleBox, info.title, info.title, pick);
+
+      panel.appendChild(hint);
+      panel.appendChild(titleBox);
+
+      const sentences = splitSentences(info.description);
+      if (sentences.length > 0) {
+        const descBox = document.createElement("div");
+        descBox.className = "term-words";
+        sentences.forEach((sentence) => appendWordButtons(descBox, sentence, sentence, pick));
+        panel.appendChild(descBox);
+      }
+
+      panel.appendChild(lookupBox.element);
+    }
+
+    function open(name) {
+      panel.hidden = false;
+      button.textContent = "📖 용어 닫기";
+      build();
+
+      if (name) {
+        lookupBox.run(name, buildSource(findContextSentence(name, info.title, info.description)));
+      }
+    }
+
+    button.addEventListener("click", () => {
+      if (panel.hidden) {
+        open();
+      } else {
+        panel.hidden = true;
+        button.textContent = "📖 용어 찾기";
+      }
+    });
+
+    // 이 기사 글에 사전에 있는 용어가 있으면, 눌러볼 수 있는 칩으로 미리 보여줘요. (최대 2개)
+    const chips = findKnownTermsInText(`${info.title} ${info.description}`, 2).map((found) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "term-chip";
+      chip.textContent = `📖 ${found.matched}`;
+      chip.addEventListener("click", () => open(found.matched));
+      return chip;
+    });
+
+    return { button, panel, chips };
+  }
+
+  // ----- 용어사전 화면 -----
+  // 내가 담아둔 용어 목록
+  function createSavedTermCard(saved) {
+    const card = document.createElement("div");
+    card.className = "term-card";
+
+    const top = document.createElement("div");
+    top.className = "term-card-top";
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "term-name";
+    nameEl.textContent = saved.term;
+    top.appendChild(nameEl);
+
+    const tagEl = document.createElement("span");
+    tagEl.className = "term-tag";
+    tagEl.textContent = { builtin: "기본 용어", encyc: "백과사전", custom: "직접 작성" }[saved.meaningSource.kind] || "용어";
+    top.appendChild(tagEl);
+
+    const spacer = document.createElement("span");
+    spacer.className = "term-spacer";
+    top.appendChild(spacer);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "term-remove";
+    removeBtn.title = "사전에서 빼기";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => {
+      removeSavedTerm(saved.term);
+      renderMyTerms();
+      renderBuiltinList();
+    });
+    top.appendChild(removeBtn);
+
+    const meaningEl = document.createElement("p");
+    meaningEl.className = "term-meaning";
+    meaningEl.textContent = saved.meaning;
+
+    const sourceLabel = document.createElement("p");
+    sourceLabel.className = "term-source-label";
+    if (saved.meaningSource.url) {
+      const link = document.createElement("a");
+      link.href = saved.meaningSource.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = `${saved.meaningSource.label} ↗`;
+      sourceLabel.appendChild(link);
+    } else {
+      sourceLabel.textContent = saved.meaningSource.label;
+    }
+
+    card.appendChild(top);
+    card.appendChild(meaningEl);
+    card.appendChild(sourceLabel);
+
+    // 이 용어를 만난 기사와 문맥
+    if (saved.sources.length > 0) {
+      const sourcesBox = document.createElement("div");
+      sourcesBox.className = "term-sources";
+
+      const title = document.createElement("div");
+      title.className = "term-sources-title";
+      title.textContent = `📰 이 용어를 만난 기사 (${saved.sources.length})`;
+      sourcesBox.appendChild(title);
+
+      saved.sources.forEach((source) => {
+        const item = document.createElement("div");
+
+        const articleLink = document.createElement("a");
+        articleLink.className = "term-source-article";
+        articleLink.href = source.articleUrl;
+        articleLink.target = "_blank";
+        articleLink.rel = "noopener noreferrer";
+        articleLink.textContent = source.articleTitle;
+
+        const meta = document.createElement("div");
+        meta.className = "term-source-meta";
+        meta.textContent = [source.outlet, formatShortDate(source.pubDate) && `${formatShortDate(source.pubDate)} 기사`]
+          .filter(Boolean)
+          .join(" · ");
+
+        item.appendChild(articleLink);
+        if (meta.textContent) item.appendChild(meta);
+
+        if (source.context) {
+          const context = document.createElement("div");
+          context.className = "term-context";
+          appendHighlighted(context, source.context, saved.term);
+          item.appendChild(context);
+        }
+
+        sourcesBox.appendChild(item);
+      });
+
+      card.appendChild(sourcesBox);
+    }
+
+    // 내 메모 (다른 곳을 누르면 자동 저장)
+    const memoBox = document.createElement("textarea");
+    memoBox.className = "bookmark-memo";
+    memoBox.placeholder = "이 용어에 대한 내 메모를 남겨보세요";
+    memoBox.value = saved.memo || "";
+    memoBox.addEventListener("blur", () => {
+      updateTermMemo(saved.term, memoBox.value);
+      memoBox.classList.add("saved");
+      setTimeout(() => memoBox.classList.remove("saved"), 1000);
+    });
+    card.appendChild(memoBox);
+
+    return card;
+  }
+
+  function renderMyTerms() {
+    const list = getSavedTerms();
+    const filter = (document.getElementById("my-terms-filter").value || "").trim().toLowerCase();
+    const listEl = document.getElementById("my-terms-list");
+    const emptyEl = document.getElementById("my-terms-empty");
+
+    document.getElementById("my-terms-count").textContent = list.length > 0 ? `(${list.length})` : "";
+    listEl.innerHTML = "";
+
+    if (list.length === 0) {
+      emptyEl.textContent = '아직 담아둔 용어가 없어요. 뉴스 카드의 "📖 용어 찾기"로 모르는 단어를 담아보세요.';
+      emptyEl.hidden = false;
+      return;
+    }
+
+    const filtered = list.filter(
+      (saved) =>
+        !filter ||
+        saved.term.toLowerCase().includes(filter) ||
+        (saved.meaning || "").toLowerCase().includes(filter) ||
+        saved.sources.some((s) => (s.articleTitle || "").toLowerCase().includes(filter))
+    );
+
+    emptyEl.textContent = "검색 결과가 없어요.";
+    emptyEl.hidden = filtered.length > 0;
+    filtered.forEach((saved) => listEl.appendChild(createSavedTermCard(saved)));
+  }
+
+  // 기본 용어 둘러보기 (분야별로 걸러 보고, 눌러서 담을 수 있어요)
+  let builtinCategoryFilter = "전체";
+
+  function renderBuiltinList() {
+    const row = document.getElementById("builtin-category-row");
+    row.innerHTML = "";
+
+    BUILTIN_CATEGORIES.forEach((category) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "filter-chip" + (builtinCategoryFilter === category ? " active" : "");
+      btn.textContent = category;
+      btn.addEventListener("click", () => {
+        builtinCategoryFilter = category;
+        renderBuiltinList();
+      });
+      row.appendChild(btn);
+    });
+
+    const listEl = document.getElementById("builtin-terms-list");
+    listEl.innerHTML = "";
+
+    BUILTIN_TERMS.filter((entry) => builtinCategoryFilter === "전체" || entry.category === builtinCategoryFilter).forEach(
+      (entry) => {
+        listEl.appendChild(
+          createTermResultCard(
+            {
+              term: entry.term,
+              meaning: entry.meaning,
+              tag: entry.category,
+              meaningSource: { kind: "builtin", label: "뉴스한입 기본 용어" },
+            },
+            null
+          )
+        );
+      }
+    );
+  }
+
+  const dictLookup = createLookupBox();
+  document.getElementById("dict-lookup-host").appendChild(dictLookup.element);
+  document.getElementById("my-terms-filter").addEventListener("input", renderMyTerms);
+
   // 기사 원문 페이지에서 대표 이미지(og:image)를 가져와 작게 보여주는 함수.
   // 네이버 뉴스 검색 API 응답에는 이미지가 없어서 원문 페이지를 직접 확인해요.
   // 이미지를 못 찾거나 요청이 실패해도 조용히 넘어가고, 카드는 이미지 없이 정상적으로 보여요.
@@ -1954,6 +3212,18 @@
       keywordRow.appendChild(chip);
     });
 
+    // 용어사전: 이 기사 글에 사전에 있는 용어가 있으면 칩으로 보여주고,
+    // "📖 용어 찾기"를 누르면 모르는 단어를 골라 기사 출처와 함께 담을 수 있어요.
+    const termFinder = createTermFinder({
+      title,
+      description: cleanText(item.description || ""),
+      url,
+      outlet: matchOutlet(item),
+      pubDate: item.pubDate,
+    });
+    termFinder.chips.forEach((chip) => keywordRow.appendChild(chip));
+    keywordRow.appendChild(termFinder.button);
+
     // 관심있어요를 누르면 펼쳐지는 관련 기사 영역 (처음엔 숨김)
     const relatedPanel = document.createElement("div");
     relatedPanel.className = "related-panel";
@@ -1992,6 +3262,7 @@
 
     card.appendChild(header);
     card.appendChild(keywordRow);
+    card.appendChild(termFinder.panel);
     card.appendChild(relatedPanel);
     return card;
   }
@@ -2167,6 +3438,17 @@
           titleRow.appendChild(titleEl);
           titleRow.appendChild(createImpactButtons(impactStockName, relatedUrl));
         }
+
+        // 관련 기사·종목 뉴스에서도 모르는 단어를 출처와 함께 담을 수 있어요.
+        const relatedFinder = createTermFinder({
+          title: relatedTitle,
+          description: relatedDesc,
+          url: relatedUrl,
+          outlet: matchOutlet(relatedItem),
+          pubDate: relatedItem.pubDate,
+        });
+        relatedCard.appendChild(relatedFinder.button);
+        relatedCard.appendChild(relatedFinder.panel);
 
         panelElement.appendChild(relatedCard);
       });
