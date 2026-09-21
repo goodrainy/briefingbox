@@ -505,30 +505,20 @@
     display: none;
   }
 
-  .related-item {
-    font-size: 0.86rem;
+  /* 기사 요약(네이버가 주는 발췌문): 뉴스 요약·종목 뉴스·관련 기사 모두 같은 모양으로 보여줘요 */
+  .article-summary {
+    margin-top: 6px;
+    padding-left: 18px; /* 키워드 줄과 같은 위치에 맞춰요 */
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: var(--color-text-light);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .related-title {
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  /* 주식 종목 뉴스: 제목 옆에 "+ / −" 영향 표시 버튼을 붙여요 */
-  .related-title-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  .related-title-row .related-title {
-    flex: 1;
-    min-width: 0;
-    margin-bottom: 0;
-  }
-
+  /* 주식 종목 뉴스: 제목 줄 오른쪽에 "+ / −" 영향 표시 버튼을 붙여요 */
   .impact-buttons {
     display: flex;
     flex-shrink: 0;
@@ -570,22 +560,6 @@
   .impact-hint {
     font-size: 0.78rem;
     color: var(--color-text-light);
-  }
-
-  .related-desc {
-    color: var(--color-text-light);
-    margin-bottom: 6px;
-    line-height: 1.5;
-  }
-
-  .related-link {
-    color: var(--color-primary);
-    font-weight: 600;
-    font-size: 0.82rem;
-  }
-
-  .related-link:hover {
-    color: var(--color-primary-dark);
   }
 
   /* 뉴스를 불러오는 중이거나 결과가 없을 때 보여주는 안내 문구 */
@@ -1011,12 +985,6 @@
     margin-top: 12px;
   }
 
-  .lookup-encyc {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .lookup-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1220,10 +1188,6 @@
     filter: brightness(0.96);
   }
 
-  .related-item .term-btn {
-    margin-left: 10px;
-  }
-
   .term-panel {
     margin-top: 10px;
     padding: 12px 14px;
@@ -1372,8 +1336,20 @@
       padding: 0;
     }
 
-    .news-card-header .more-btn {
+    /* 기사 요약은 제목 아래, 키워드 위 한 줄 전체로 보여줘요 */
+    .article-summary {
+      order: 3;
+      flex: 0 0 100%;
+      margin-top: 0;
+      padding-left: 0;
+    }
+
+    .news-card-header .more-btn,
+    .news-card-header .impact-buttons {
       order: 4;
+    }
+
+    .news-card-header .more-btn {
       padding: 6px 12px;
     }
 
@@ -1593,7 +1569,7 @@
         뉴스를 읽다 모르는 말이 나오면 담아두세요. 어느 기사에서 만난 말인지도 함께 기록돼요.
       </p>
 
-      <!-- 용어 검색 + 등록 (기본 용어 → 네이버 백과사전 → 직접 쓰기 순서로 찾아요) -->
+      <!-- 용어 검색 + 등록 (기본 용어 → 국어사전 링크 → 직접 쓰기 순서로 찾아요) -->
       <div class="dict-block">
         <h3>용어 찾기·등록</h3>
         <div id="dict-lookup-host"></div>
@@ -2331,7 +2307,7 @@
   // ===============================
   // 용어사전
   //
-  // [용어 찾는 순서] 기본 용어(아래 목록) → 네이버 백과사전(/api/dictionary) → 직접 뜻 쓰기
+  // [용어 찾는 순서] 기본 용어(아래 목록) → 국어사전 링크로 뜻 확인 → 내 말로 직접 뜻 쓰기
   // [저장] 로그인 없이 이 브라우저의 localStorage에만 저장돼요. 저장할 때
   //        "어느 기사의 어떤 문장에서 만난 용어인지(출처 기사 + 문맥)"도 함께 기록해요.
   //        같은 용어를 다른 기사에서 또 만나면, 출처가 하나씩 더 쌓여요.
@@ -2578,13 +2554,14 @@
     });
   }
 
-  // ----- 네이버 백과사전 -----
-  async function fetchEncycCandidates(query) {
-    const response = await fetch(`/api/dictionary?query=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
-    return data.items || [];
-  }
+  // ----- 뜻 찾아보기용 사전 링크 -----
+  // 네이버 백과사전 API는 어학사전이 아니라서 엉뚱한 뜻이 나오는 일이 많아서 뺐어요.
+  // 대신 기본 용어에 없는 말은 아래 사전을 새 탭으로 열어 뜻을 확인하고, 내 말로 정리해서 담게 해요.
+  const DICTIONARY_LINKS = [
+    { label: "네이버 국어사전", url: (q) => `https://ko.dict.naver.com/#/search?query=${encodeURIComponent(q)}` },
+    { label: "우리말샘", url: (q) => `https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(q)}` },
+    { label: "네이버 지식백과", url: (q) => `https://terms.naver.com/search.naver?query=${encodeURIComponent(q)}` },
+  ];
 
   // ----- 용어 카드 (검색 결과 / 기본 용어 목록에서 "사전에 담기" 버튼이 붙은 카드) -----
   // entry: { term, meaning, tag, meaningSource: { kind, label, url } }
@@ -2658,7 +2635,7 @@
     return card;
   }
 
-  // 검색어에 대한 결과를 container에 그려요. (기본 용어 → 백과사전 → 직접 쓰기)
+  // 검색어에 대한 결과를 container에 그려요. (기본 용어 → 사전 링크 → 직접 쓰기)
   function renderLookupResults(container, query, source) {
     container.innerHTML = "";
 
@@ -2677,73 +2654,28 @@
       );
     });
 
-    const encycArea = document.createElement("div");
-    encycArea.className = "lookup-encyc";
-    container.appendChild(encycArea);
+    if (matches.length === 0) {
+      const notice = document.createElement("p");
+      notice.className = "summary-status";
+      notice.textContent =
+        "기본 용어에 없는 말이에요. 아래 사전에서 뜻을 확인한 뒤, 내 말로 정리해서 담아보세요.";
+      container.appendChild(notice);
+    }
 
-    const loadEncyc = async () => {
-      encycArea.innerHTML = '<p class="summary-status">네이버 백과사전에서 찾는 중...</p>';
-
-      try {
-        const items = await fetchEncycCandidates(query);
-        encycArea.innerHTML = "";
-
-        if (items.length === 0) {
-          encycArea.innerHTML =
-            '<p class="summary-status">백과사전에서 찾지 못했어요. 아래 "직접 뜻 쓰기"로 직접 적어 담아보세요.</p>';
-          return;
-        }
-
-        // 제목이 검색어로 시작하는 결과를 앞으로 보내요.
-        const q = normalizeTerm(query);
-        items.sort(
-          (a, b) =>
-            Number(normalizeTerm(stripTags(b.title)).startsWith(q)) -
-            Number(normalizeTerm(stripTags(a.title)).startsWith(q))
-        );
-
-        items.slice(0, 3).forEach((item) => {
-          encycArea.appendChild(
-            createTermResultCard(
-              {
-                term: query,
-                meaning: shorten(stripTags(item.description), 220) || "(설명이 비어 있어요)",
-                tag: "백과사전",
-                meaningSource: {
-                  kind: "encyc",
-                  label: `네이버 백과사전 · ${stripTags(item.title)}`,
-                  url: item.link,
-                },
-              },
-              source
-            )
-          );
-        });
-      } catch (error) {
-        encycArea.innerHTML =
-          '<p class="summary-status">백과사전을 불러오지 못했어요. (NAVER API HUB에 백과사전 API가 추가됐는지 확인해주세요)</p>';
-        console.error(error);
-      }
-    };
-
+    // 뜻을 찾아볼 수 있는 사전 링크 + 직접 뜻 쓰기
     const actions = document.createElement("div");
     actions.className = "lookup-actions";
 
-    if (matches.length === 0) {
-      loadEncyc();
-    } else {
-      const moreBtn = document.createElement("button");
-      moreBtn.type = "button";
-      moreBtn.className = "term-pill";
-      moreBtn.textContent = "🔎 네이버 백과사전에서도 찾기";
-      moreBtn.addEventListener("click", () => {
-        moreBtn.hidden = true;
-        loadEncyc();
-      });
-      actions.appendChild(moreBtn);
-    }
+    DICTIONARY_LINKS.forEach((dictionary) => {
+      const link = document.createElement("a");
+      link.className = "term-pill";
+      link.href = dictionary.url(query);
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = `🔗 ${dictionary.label}`;
+      actions.appendChild(link);
+    });
 
-    // 직접 뜻 쓰기: 백과사전에 없는 말이나, 내 말로 적고 싶을 때
     const writeToggle = document.createElement("button");
     writeToggle.type = "button";
     writeToggle.className = "term-pill";
@@ -2751,13 +2683,14 @@
     actions.appendChild(writeToggle);
     container.appendChild(actions);
 
+    // 기본 용어에 없으면 바로 쓸 수 있게 열어둬요.
     const writeBox = document.createElement("div");
     writeBox.className = "lookup-write";
-    writeBox.hidden = true;
+    writeBox.hidden = matches.length > 0;
 
     const writeInput = document.createElement("textarea");
     writeInput.className = "bookmark-memo";
-    writeInput.placeholder = "이 용어의 뜻을 내 말로 적어보세요";
+    writeInput.placeholder = "사전에서 확인한 뜻을 내 말로 적어보세요";
 
     const writeSave = document.createElement("button");
     writeSave.type = "button";
@@ -3130,37 +3063,53 @@
 
   // 기사 원문 페이지에서 대표 이미지(og:image)를 가져와 작게 보여주는 함수.
   // 네이버 뉴스 검색 API 응답에는 이미지가 없어서 원문 페이지를 직접 확인해요.
-  // 이미지를 못 찾거나 요청이 실패해도 조용히 넘어가고, 카드는 이미지 없이 정상적으로 보여요.
+  // 이미지를 못 찾거나, 주소가 있어도 실제로 불러오지 못하거나(깨진 그림), 너무 작은 이미지면
+  // 아예 보이지 않게 지워요. (카드는 이미지 없이 정상적으로 보여요)
   async function loadNewsThumbnail(articleUrl, imgEl) {
     try {
       const response = await fetch(`/api/thumbnail?url=${encodeURIComponent(articleUrl)}`);
       if (!response.ok) return;
       const data = await response.json();
-      if (data.image) {
-        imgEl.src = data.image;
-        imgEl.hidden = false;
-      }
+      if (!data.image) return;
+
+      imgEl.onload = () => {
+        if (imgEl.naturalWidth >= 60 && imgEl.naturalHeight >= 60) imgEl.hidden = false;
+        else imgEl.remove();
+      };
+      imgEl.onerror = () => imgEl.remove();
+      imgEl.referrerPolicy = "no-referrer"; // 일부 언론사가 다른 사이트에서 이미지를 못 가져가게 막는 걸 줄여요
+      imgEl.src = data.image;
     } catch (error) {
       // 이미지 없이도 카드는 정상 동작해야 하므로 에러는 조용히 무시해요.
     }
   }
 
-  // 기사 하나(item)를 받아서, "이미지 + 제목 줄 + 발행시각 + 키워드 + 관심있어요 버튼 + 관련 기사 목록" 카드를 만드는 함수
-  function createNewsCard(item) {
+  // 기사 카드 하나를 만드는 함수. "뉴스 요약", "사회 뉴스로 보는 주식", 관련 기사가 모두 이 카드를 써서
+  // 제목·요약·언론사·시간·키워드·용어 찾기가 똑같은 모양으로 나와요.
+  // action(제목 줄 오른쪽에 붙는 버튼)만 달라요:
+  //   "bookmark" = 뉴스 요약의 "관심있어요"(찜 + 관련 기사)
+  //   "impact"   = 종목 뉴스의 "+ / −"(주가 영향 표시, stockName 필요)
+  //   "none"     = 버튼 없음
+  function createArticleCard(item, options = {}) {
+    const action = options.action || "none";
+    const stockName = options.stockName || null;
+
     const title = cleanText(item.title);
+    const description = stripTags(item.description);
     // originallink(언론사 원문)가 있으면 그걸 쓰고, 없으면 네이버 뉴스 링크(link)를 사용
     const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
     const keywords = extractKeywords(title);
     const pubTimeText = formatPubDate(item.pubDate);
+    const outlet = matchOutlet(item);
 
     const card = document.createElement("div");
     card.className = "news-card";
 
-    // 제목 줄 + 관심있어요 버튼을 담는 헤더
+    // 제목 줄 (이미지 + 제목 + 오른쪽 버튼)
     const header = document.createElement("div");
     header.className = "news-card-header";
 
-    // 기사 대표 이미지 (없으면 그냥 숨겨진 채로 남아요)
+    // 기사 대표 이미지 (없거나 깨지면 지워져요)
     const thumbEl = document.createElement("img");
     thumbEl.className = "news-thumb";
     thumbEl.alt = "";
@@ -3172,32 +3121,89 @@
     titleLink.href = url;
     titleLink.target = "_blank"; // 새 탭에서 원문 기사 열기
     titleLink.rel = "noopener noreferrer";
-    titleLink.innerHTML = `<span class="bullet">•</span><span>${title}</span>`;
 
-    // "마음에 드는 기사 선택" 버튼: 처음 누르면 찜 목록에 저장하면서 관련 기사를 보여주고,
-    // 다시 누르면 찜은 유지한 채 관련 기사 영역만 접힙니다.
-    const moreBtn = document.createElement("button");
-    moreBtn.type = "button";
-    moreBtn.className = "more-btn";
-
-    // 이 기사가 이미 찜한 기사라면, 카드를 열자마자 찜 표시가 되어 있도록 초기 상태를 맞춰줍니다.
-    if (isBookmarked(url)) {
-      card.classList.add("selected");
-      moreBtn.textContent = "❤️ 찜한 기사 · 더 보기";
-    } else {
-      moreBtn.textContent = "🤍 관심있어요";
-    }
+    const bulletEl = document.createElement("span");
+    bulletEl.className = "bullet";
+    bulletEl.textContent = "•";
+    const titleTextEl = document.createElement("span");
+    titleTextEl.textContent = title;
+    titleLink.appendChild(bulletEl);
+    titleLink.appendChild(titleTextEl);
 
     header.appendChild(thumbEl);
     header.appendChild(titleLink);
-    header.appendChild(moreBtn);
 
-    // 제목 아래: 발행 시각 + 키워드 칩 목록
+    // 관심있어요를 누르면 펼쳐지는 관련 기사 영역 (뉴스 요약에서만 써요)
+    let relatedPanel = null;
+
+    if (action === "bookmark") {
+      // 처음 누르면 찜 목록에 저장하면서 관련 기사를 보여주고,
+      // 다시 누르면 찜은 유지한 채 관련 기사 영역만 접혀요.
+      const moreBtn = document.createElement("button");
+      moreBtn.type = "button";
+      moreBtn.className = "more-btn";
+
+      // 이미 찜한 기사라면, 카드를 열자마자 찜 표시가 되어 있도록 초기 상태를 맞춰줘요.
+      if (isBookmarked(url)) {
+        card.classList.add("selected");
+        moreBtn.textContent = "❤️ 찜한 기사 · 더 보기";
+      } else {
+        moreBtn.textContent = "🤍 관심있어요";
+      }
+
+      header.appendChild(moreBtn);
+
+      relatedPanel = document.createElement("div");
+      relatedPanel.className = "related-panel";
+      relatedPanel.hidden = true;
+
+      let loaded = false; // 관련 기사를 이미 한 번 불러왔는지 (중복 요청 방지용)
+
+      moreBtn.addEventListener("click", () => {
+        const isPanelOpen = !relatedPanel.hidden;
+
+        if (isPanelOpen) {
+          // 패널만 접어요. 이미 찜한 기사라면 찜 상태(하트, 배경색)는 그대로 유지돼요.
+          relatedPanel.hidden = true;
+          moreBtn.textContent = card.classList.contains("selected")
+            ? "❤️ 찜한 기사 · 더 보기"
+            : "🤍 관심있어요";
+          return;
+        }
+
+        // 처음 펼칠 때 찜 목록에 추가 (이미 찜한 기사면 중복 저장되지 않아요)
+        if (!card.classList.contains("selected")) {
+          card.classList.add("selected");
+          addBookmark({ title, url, memo: "" });
+        }
+
+        relatedPanel.hidden = false;
+        moreBtn.textContent = "❤️ 관련기사 접기";
+
+        if (!loaded) {
+          // 키워드가 있으면 키워드로, 없으면 제목 전체로 검색
+          const searchQuery = keywords.length > 0 ? keywords.join(" ") : title;
+          loadRelatedArticles(searchQuery, relatedPanel);
+          loaded = true;
+        }
+      });
+    } else if (action === "impact") {
+      header.appendChild(createImpactButtons(stockName, url));
+    }
+
+    // 기사 요약 (네이버가 주는 발췌문)
+    let summaryEl = null;
+    if (description) {
+      summaryEl = document.createElement("p");
+      summaryEl.className = "article-summary";
+      summaryEl.textContent = description;
+    }
+
+    // 제목·요약 아래: 언론사 + 발행 시각 + 키워드 칩 + 용어 칩 + 용어 찾기 버튼
     const keywordRow = document.createElement("div");
     keywordRow.className = "keyword-row";
 
-    // 언론사 이름(원문 주소로 알아낸 것, 모르면 생략) + 발행 시각
-    const metaText = [matchOutlet(item), pubTimeText].filter(Boolean).join(" · ");
+    const metaText = [outlet, pubTimeText].filter(Boolean).join(" · ");
     if (metaText) {
       const pubTimeEl = document.createElement("span");
       pubTimeEl.className = "pub-time";
@@ -3212,59 +3218,23 @@
       keywordRow.appendChild(chip);
     });
 
-    // 용어사전: 이 기사 글에 사전에 있는 용어가 있으면 칩으로 보여주고,
+    // 용어사전: 기사 글에 사전에 있는 용어가 있으면 칩으로 보여주고,
     // "📖 용어 찾기"를 누르면 모르는 단어를 골라 기사 출처와 함께 담을 수 있어요.
-    const termFinder = createTermFinder({
-      title,
-      description: cleanText(item.description || ""),
-      url,
-      outlet: matchOutlet(item),
-      pubDate: item.pubDate,
-    });
+    const termFinder = createTermFinder({ title, description, url, outlet, pubDate: item.pubDate });
     termFinder.chips.forEach((chip) => keywordRow.appendChild(chip));
     keywordRow.appendChild(termFinder.button);
 
-    // 관심있어요를 누르면 펼쳐지는 관련 기사 영역 (처음엔 숨김)
-    const relatedPanel = document.createElement("div");
-    relatedPanel.className = "related-panel";
-    relatedPanel.hidden = true;
-
-    let loaded = false; // 관련 기사를 이미 한 번 불러왔는지 (중복 요청 방지용)
-
-    moreBtn.addEventListener("click", () => {
-      const isPanelOpen = !relatedPanel.hidden;
-
-      if (isPanelOpen) {
-        // 패널만 접습니다. 이미 찜한 기사라면 찜 상태(하트, 배경색)는 그대로 유지돼요.
-        relatedPanel.hidden = true;
-        moreBtn.textContent = card.classList.contains("selected")
-          ? "❤️ 찜한 기사 · 더 보기"
-          : "🤍 관심있어요";
-        return;
-      }
-
-      // 처음 펼칠 때 찜 목록에 추가 (이미 찜한 기사면 중복 저장되지 않아요)
-      if (!card.classList.contains("selected")) {
-        card.classList.add("selected");
-        addBookmark({ title, url, memo: "" });
-      }
-
-      relatedPanel.hidden = false;
-      moreBtn.textContent = "❤️ 관련기사 접기";
-
-      if (!loaded) {
-        // 키워드가 있으면 키워드로, 없으면 제목 전체로 검색
-        const searchQuery = keywords.length > 0 ? keywords.join(" ") : title;
-        loadRelatedArticles(searchQuery, relatedPanel);
-        loaded = true;
-      }
-    });
-
     card.appendChild(header);
+    if (summaryEl) card.appendChild(summaryEl);
     card.appendChild(keywordRow);
     card.appendChild(termFinder.panel);
-    card.appendChild(relatedPanel);
+    if (relatedPanel) card.appendChild(relatedPanel);
     return card;
+  }
+
+  // 뉴스 요약 목록의 카드 (관심있어요 버튼이 붙어요)
+  function createNewsCard(item) {
+    return createArticleCard(item, { action: "bookmark" });
   }
 
   // 뉴스 항목의 pubDate가 "YYYYMMDD" 문자열과 같은 날짜인지 확인하는 함수
@@ -3413,44 +3383,14 @@
         panelElement.appendChild(hint);
       }
 
+      // 종목 뉴스는 제목 줄에 "+ / −"가, 관심있어요의 관련 기사는 버튼 없이 같은 카드로 보여줘요.
       items.forEach((relatedItem) => {
-        const relatedTitle = cleanText(relatedItem.title);
-        const relatedDesc = cleanText(relatedItem.description);
-        const relatedUrl =
-          relatedItem.originallink && relatedItem.originallink.length > 0
-            ? relatedItem.originallink
-            : relatedItem.link;
-
-        const relatedCard = document.createElement("div");
-        relatedCard.className = "related-item";
-        relatedCard.innerHTML = `
-          <p class="related-title">${relatedTitle}</p>
-          <p class="related-desc">${relatedDesc}</p>
-          <a class="related-link" href="${relatedUrl}" target="_blank" rel="noopener noreferrer">원문보기 →</a>
-        `;
-
-        if (impactStockName) {
-          // 제목을 한 줄(제목 + 영향 버튼)로 감싸요.
-          const titleEl = relatedCard.querySelector(".related-title");
-          const titleRow = document.createElement("div");
-          titleRow.className = "related-title-row";
-          titleEl.replaceWith(titleRow);
-          titleRow.appendChild(titleEl);
-          titleRow.appendChild(createImpactButtons(impactStockName, relatedUrl));
-        }
-
-        // 관련 기사·종목 뉴스에서도 모르는 단어를 출처와 함께 담을 수 있어요.
-        const relatedFinder = createTermFinder({
-          title: relatedTitle,
-          description: relatedDesc,
-          url: relatedUrl,
-          outlet: matchOutlet(relatedItem),
-          pubDate: relatedItem.pubDate,
-        });
-        relatedCard.appendChild(relatedFinder.button);
-        relatedCard.appendChild(relatedFinder.panel);
-
-        panelElement.appendChild(relatedCard);
+        panelElement.appendChild(
+          createArticleCard(
+            relatedItem,
+            impactStockName ? { action: "impact", stockName: impactStockName } : { action: "none" }
+          )
+        );
       });
     } catch (error) {
       panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오지 못했어요.</p>';
