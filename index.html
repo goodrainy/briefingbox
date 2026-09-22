@@ -1698,7 +1698,7 @@
         <div class="filter-row day-filter" id="day-filter-row">
           <span class="filter-label">날짜</span>
           <button type="button" class="filter-chip active" data-day="today">오늘</button>
-          <button type="button" class="filter-chip" data-day="yesterday">어제</button>
+          <button type="button" class="filter-chip" data-day="week">지난 7일</button>
         </div>
 
         <!-- 정치·경제 카테고리를 선택했을 때만 나타나는 언론사 필터 -->
@@ -2372,9 +2372,13 @@
     if (cached && cached[dateStr]) return cached[dateStr];
 
     try {
-      const codePart = code ? `&code=${encodeURIComponent(code)}` : "";
+      // 날짜별로 골고루 뽑으려면 후보가 많아야 하므로 넉넉히 받아옵니다.
+      // 종목 뉴스는 특정 날짜와 정확히 일치하는 기사만 남기기 때문에, 인기 종목처럼
+      // 최신 기사가 하루에도 많이 쏟아지면 30개 안에 그 날짜 기사가 아예 없을 수 있어요.
+      // 그래서 종목 뉴스는 API가 허용하는 최대치(100개)까지 받아와서 찾을 확률을 높여요.
+      const displayCount = impactStockName ? 100 : 30;
       const response = await fetch(
-        `/api/stock?name=${encodeURIComponent(stockName)}&date=${dateStr}${codePart}`
+        `/api/news?query=${encodeURIComponent(searchQuery)}&display=${displayCount}`
       );
       const data = await response.json();
 
@@ -4129,29 +4133,33 @@
   }
 
   // ===============================
-  // 오늘 / 어제 보기
-  // 네이버 검색 API에는 날짜 지정 기능이 없어서, "어제"는 관련도순(sim)으로 넉넉히(100개)
-  // 받아온 뒤 어제 발행된 기사만 남기는 방식이에요. 그래서 어제 기사가 적게 나올 수 있어요.
+  // 오늘 / 지난 7일 보기
+  // 네이버 검색 API에는 날짜 지정 기능이 없어서, "지난 7일"은 관련도순(sim)으로 넉넉히(100개)
+  // 받아온 뒤 어제부터 7일 전까지(오늘은 빼고) 발행된 기사만 남기는 방식이에요.
+  // 그 기사들을 하루 단위로 다시 나누지 않고, 일주일 전체를 한 후보군으로 보고
+  // 그 안에서 가장 여러 언론사가 함께 다룬(=클러스터가 가장 큰) 사건 5개를 뽑아요.
   // ===============================
   let newsDayMode = "today";
   let currentCategory = null;
   let loadCounter = 0; // 빠르게 버튼을 여러 번 눌렀을 때 늦게 도착한 옛 응답을 무시하기 위한 번호표
 
-  function isYesterday(pubDateStr) {
+  // 오늘은 빼고, 어제부터 7일 전까지에 발행된 기사인지 확인해요.
+  function isWithinPastWeek(pubDateStr) {
     const d = new Date(pubDateStr);
     if (Number.isNaN(d.getTime())) return false;
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return toDateStr(d) === toDateStr(yesterday);
+
+    const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / (24 * 60 * 60 * 1000));
+    return diffDays >= 1 && diffDays <= 7;
   }
 
   function dayLabel() {
-    return newsDayMode === "yesterday" ? "어제의" : "오늘의";
+    return newsDayMode === "week" ? "지난 7일간의" : "오늘의";
   }
 
   async function fetchNewsPool(query, todayDisplayCount) {
     const url =
-      newsDayMode === "yesterday"
+      newsDayMode === "week"
         ? `/api/news?query=${encodeURIComponent(query)}&display=100&sort=sim`
         : `/api/news?query=${encodeURIComponent(query)}&display=${todayDisplayCount}`;
 
@@ -4160,7 +4168,7 @@
     if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
 
     const items = data.items || [];
-    return newsDayMode === "yesterday" ? items.filter((item) => isYesterday(item.pubDate)) : items;
+    return newsDayMode === "week" ? items.filter((item) => isWithinPastWeek(item.pubDate)) : items;
   }
 
   let politicsRawPool = [];
@@ -4237,7 +4245,9 @@
 
   function applyPoliticsFiltersAndRender() {
     const filtered = filterPoliticsPool(politicsRawPool);
-    const hotItems = pickHotArticles(filtered, 5);
+    // "지난 7일"은 하루 기준이 없는 후보군이라, pickHotArticles의 "오늘 기사 우선" 로직 대신
+    // 그냥 여러 언론사가 함께 다룬 사건 순으로만 뽑아요.
+    const hotItems = newsDayMode === "week" ? pickRepresentatives(filtered, 5) : pickHotArticles(filtered, 5);
 
     summaryList.innerHTML = "";
 
@@ -4306,8 +4316,8 @@
 
       if (items.length === 0) {
         summaryTitle.textContent =
-          newsDayMode === "yesterday"
-            ? `어제 ${category} 기사를 충분히 찾지 못했어요`
+          newsDayMode === "week"
+            ? `지난 7일간 ${category} 기사를 충분히 찾지 못했어요`
             : `${category} 관련 뉴스를 찾지 못했어요`;
         return;
       }
@@ -4330,7 +4340,8 @@
       }
 
       // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
-      const hotItems = pickHotArticles(candidates, 5);
+      // ("지난 7일"은 오늘 기사 우선 로직 없이, 일주일 전체에서 여러 언론사가 함께 다룬 사건 순으로 뽑아요)
+      const hotItems = newsDayMode === "week" ? pickRepresentatives(candidates, 5) : pickHotArticles(candidates, 5);
 
       summaryTitle.textContent = `${dayLabel()} ${category} 이슈 요약`;
 
