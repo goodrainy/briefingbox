@@ -11,8 +11,10 @@ export default async function handler(req, res) {
   // display: 가져올 기사 개수 (안 보내면 5개, 최대 100개로 제한)
   // - "핫한 기사" 골라내기 기능이 여러 기사를 비교해서 골라야 해서, 카테고리 요약 화면에서는
   //   더 큰 후보군(예: 20개)을 요청한 뒤 그중 화제성 높은 기사만 추려서 보여줘요.
-  // sort: "date"(최신순, 기본값) 또는 "sim"(관련도순). "어제 기사" 보기에서 sim을 사용해요.
-  const { query, display, sort } = req.query; // 예: /api/news?query=경제&display=20
+  // sort: "date"(최신순, 기본값) 또는 "sim"(관련도순). "지난 7일" 보기에서 sim을 사용해요.
+  // start: 몇 번째 결과부터 받을지(기본 1). 네이버 API는 한 번에 최대 100개까지만 주기 때문에,
+  //   특정 날짜 기사를 찾을 확률을 높이려고 종목 뉴스에서는 start를 바꿔가며 여러 번 나눠 받아요.
+  const { query, display, sort, start } = req.query; // 예: /api/news?query=경제&display=20&start=101
 
   if (!query) {
     res.status(400).json({ error: "검색어(query)가 필요합니다." });
@@ -24,6 +26,13 @@ export default async function handler(req, res) {
     displayCount = 5;
   } else if (displayCount > 100) {
     displayCount = 100;
+  }
+
+  let startIndex = parseInt(start, 10);
+  if (!Number.isInteger(startIndex) || startIndex < 1) {
+    startIndex = 1;
+  } else if (startIndex > 1000) {
+    startIndex = 1000; // 네이버 API가 허용하는 최댓값
   }
 
   const sortMode = sort === "sim" ? "sim" : "date";
@@ -44,7 +53,7 @@ export default async function handler(req, res) {
   // 예전 개발자센터(developers.naver.com) 방식과 주소·헤더 이름이 다릅니다.
   const apiUrl = `https://naverapihub.apigw.ntruss.com/search/v1/news?query=${encodeURIComponent(
     query
-  )}&display=${displayCount}&sort=${sortMode}`;
+  )}&display=${displayCount}&start=${startIndex}&sort=${sortMode}`;
 
   try {
     const naverResponse = await fetch(apiUrl, {
