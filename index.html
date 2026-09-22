@@ -1738,7 +1738,7 @@
 
       <!-- 종목 등록 입력창 -->
       <div class="stock-input-row">
-        <input type="text" id="stock-input" placeholder="예: 삼성전자 (KOSPI 종목)" />
+        <input type="text" id="stock-input" placeholder="예: 삼성전자" />
         <button type="button" id="stock-add-btn">등록</button>
       </div>
       <p class="stock-hint">
@@ -1801,16 +1801,18 @@
     <div class="backup-box">
       <p class="backup-title">💾 내 데이터 백업</p>
       <p class="backup-desc">
-        찜한 뉴스·종목·용어사전은 이 브라우저에만 저장돼요. 파일로 저장해두면 브라우저를 바꾸거나 데이터를 지운 뒤에도 다시 불러올 수 있어요.
+        찜한 뉴스·종목·용어사전은 이 브라우저에만 저장돼요. 내보내기를 누르면 더블클릭으로 바로 열어볼 수 있는 파일로 저장되고, 그 파일을 다시 "가져오기"에 올리면 데이터를 복원할 수 있어요.
       </p>
       <div class="backup-actions">
         <button type="button" class="term-pill" id="backup-export-btn">📤 내보내기</button>
         <button type="button" class="term-pill" id="backup-import-btn">📥 가져오기</button>
       </div>
-      <input type="file" id="backup-file" accept=".json,application/json" hidden />
+      <input type="file" id="backup-file" accept=".html,.json,text/html,application/json" hidden />
     </div>
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
   </footer>
+
+<script src="terms-data.js"></script>
 
 <script>
   // ===============================
@@ -2358,8 +2360,6 @@
       return JSON.parse(localStorage.getItem(DAY_CHANGE_KEY)) || {};
     } catch (error) {
       return {};
-    }
-  }
 
   // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
   // 아직 데이터가 없으면 { status: "pending" }, 그 밖의 실패는 { status: "error" }
@@ -2685,7 +2685,7 @@
 
       if (!loaded) {
         // 주가 기준일자를 넘겨서, 그 날짜에 발행된 뉴스 위주로 찾도록 해요.
-        loadRelatedArticles(stockName, relatedPanel, stockBaseDate, stockName);
+        loadRelatedArticles(stockName, relatedPanel, { filterDateStr: stockBaseDate, impactStockName: stockName });
         loaded = true;
       }
     });
@@ -2778,64 +2778,7 @@
   //        "어느 기사의 어떤 문장에서 만난 용어인지(출처 기사 + 문맥)"도 함께 기록해요.
   //        같은 용어를 다른 기사에서 또 만나면, 출처가 하나씩 더 쌓여요.
   // ===============================
-  const BUILTIN_TERMS = [
-    // ----- 주식 -----
-    { term: "코스피", category: "주식", aliases: ["KOSPI"], meaning: "한국거래소 유가증권시장에 상장된 대표 기업들의 주가를 종합해 나타낸 지수예요. 우리나라 증시 전체 분위기를 볼 때 가장 먼저 보는 숫자예요." },
-    { term: "코스닥", category: "주식", aliases: ["KOSDAQ"], meaning: "중소·벤처·기술 기업 중심의 주식시장이에요. 코스피보다 등락 폭이 큰 편이에요." },
-    { term: "시가총액", category: "주식", aliases: ["시총"], meaning: "주가에 발행된 주식 수를 곱한 값으로, 시장이 평가하는 기업의 몸집이에요." },
-    { term: "배당", category: "주식", aliases: [], meaning: "기업이 번 이익의 일부를 주식을 가진 사람(주주)에게 나눠주는 것이에요." },
-    { term: "PER(주가수익비율)", category: "주식", aliases: ["PER", "주가수익비율"], meaning: "주가를 주당순이익으로 나눈 값이에요. 이익에 비해 주가가 비싼지 싼지를 가늠할 때 써요." },
-    { term: "PBR(주가순자산비율)", category: "주식", aliases: ["PBR", "주가순자산비율"], meaning: "주가를 주당순자산으로 나눈 값이에요. 1보다 낮으면 회사의 장부상 가치보다 싸게 거래된다는 뜻이에요." },
-    { term: "공매도", category: "주식", aliases: [], meaning: "주식을 빌려서 먼저 팔고, 값이 내려가면 싸게 사서 갚아 차익을 노리는 거래예요. 주가가 내려갈 것에 거는 방식이에요." },
-    { term: "상장폐지", category: "주식", aliases: [], meaning: "주식시장에서 거래할 자격을 잃고 종목이 퇴출되는 것이에요." },
-    { term: "유상증자", category: "주식", aliases: [], meaning: "기업이 돈이 필요해서 새 주식을 발행해 투자자에게 파는 것이에요. 기존 주주의 지분 가치가 줄 수 있어요." },
-    { term: "자사주", category: "주식", aliases: ["자기주식"], meaning: "기업이 자기 회사 주식을 사들인 것이에요. 이걸 없애면(소각) 주식 수가 줄어 한 주의 가치가 올라가는 효과가 있어요." },
-    { term: "서킷브레이커", category: "주식", aliases: ["서킷 브레이커"], meaning: "증시가 급락할 때 시장 전체의 거래를 잠시 멈추는 제도예요. 투자자가 진정할 시간을 주려는 장치예요." },
-    { term: "외국인 순매수", category: "주식", aliases: ["순매수", "외국인순매수"], meaning: "외국인 투자자가 판 것보다 산 것이 더 많은 상태예요." },
-    { term: "영업이익", category: "주식", aliases: [], meaning: "기업이 본업으로 번 이익이에요. 매출에서 원가와 운영비를 뺀 값이에요." },
-    { term: "어닝 서프라이즈", category: "주식", aliases: ["어닝서프라이즈", "어닝"], meaning: "기업의 실제 실적이 시장 예상보다 훨씬 좋게 나오는 것이에요. 반대는 어닝 쇼크예요." },
-    { term: "상한가·하한가", category: "주식", aliases: ["상한가", "하한가"], meaning: "하루에 오르내릴 수 있는 최대 폭까지 오르거나 내린 가격이에요." },
-
-    // ----- 경제 -----
-    { term: "기준금리", category: "경제", aliases: [], meaning: "중앙은행(한국은행)이 정하는 정책 금리예요. 은행 예금·대출 금리의 기준이 돼요." },
-    { term: "인플레이션", category: "경제", aliases: ["인플레"], meaning: "물가가 계속 오르는 현상이에요. 같은 돈으로 살 수 있는 물건이 줄어요." },
-    { term: "디플레이션", category: "경제", aliases: ["디플레"], meaning: "물가가 계속 내리는 현상이에요. 소비와 투자가 움츠러들 수 있어요." },
-    { term: "환율", category: "경제", aliases: [], meaning: "우리 돈과 외국 돈을 바꾸는 비율이에요. 원/달러 환율이 오르면 원화 가치가 떨어진 거예요." },
-    { term: "소비자물가지수(CPI)", category: "경제", aliases: ["소비자물가지수", "소비자물가", "CPI"], meaning: "소비자가 자주 사는 상품과 서비스의 가격 변화를 지수로 나타낸 것이에요." },
-    { term: "생산자물가지수", category: "경제", aliases: ["생산자물가"], meaning: "기업이 만들어 파는 물건의 가격 변화를 나타낸 지수예요. 나중에 소비자 물가에 영향을 줘요." },
-    { term: "GDP(국내총생산)", category: "경제", aliases: ["GDP", "국내총생산"], meaning: "한 나라 안에서 일정 기간 새로 만들어진 물건과 서비스의 총가치예요. 경제 규모와 성장을 보는 대표 지표예요." },
-    { term: "경상수지", category: "경제", aliases: [], meaning: "한 나라가 다른 나라와 상품·서비스·소득을 거래해서 번 돈과 쓴 돈의 차이예요." },
-    { term: "무역수지", category: "경제", aliases: [], meaning: "수출액에서 수입액을 뺀 값이에요. 플러스면 흑자, 마이너스면 적자예요." },
-    { term: "스태그플레이션", category: "경제", aliases: [], meaning: "경기는 나쁜데 물가는 계속 오르는 상황이에요." },
-    { term: "양적완화", category: "경제", aliases: [], meaning: "중앙은행이 국채 등을 사들여 시중에 돈을 푸는 정책이에요. 경기를 살리려고 쓰는 방법이에요." },
-    { term: "국채", category: "경제", aliases: [], meaning: "나라가 돈을 빌리려고 발행하는 채권이에요. 국채 금리는 다른 금리의 기준이 돼요." },
-    { term: "가계부채", category: "경제", aliases: [], meaning: "가계(가정)가 금융기관에서 빌린 돈의 총합이에요." },
-    { term: "재정적자", category: "경제", aliases: [], meaning: "정부가 걷은 돈보다 쓴 돈이 더 많은 상태예요." },
-    { term: "유류세", category: "경제", aliases: [], meaning: "휘발유·경유 등에 붙는 세금이에요. 유류세를 내리면 기름값이 낮아져요." },
-
-    // ----- 정치·시사 -----
-    { term: "국정감사", category: "정치·시사", aliases: ["국감"], meaning: "국회가 정부 기관이 일을 잘했는지 점검하는 활동이에요. 매년 정기국회 기간에 이뤄져요." },
-    { term: "예산안", category: "정치·시사", aliases: [], meaning: "정부가 다음 해에 얼마를 걷고 쓸지를 담아 국회에 내는 계획안이에요. 국회가 심의해서 확정해요." },
-    { term: "추경(추가경정예산)", category: "정치·시사", aliases: ["추경", "추가경정예산"], meaning: "이미 정해진 예산을 고쳐서 추가로 짜는 예산이에요. 경기 침체나 재난 때 편성해요." },
-    { term: "본회의", category: "정치·시사", aliases: [], meaning: "국회의원 전원이 참석하는 회의예요. 법안을 최종 표결하는 곳이에요." },
-    { term: "상임위원회", category: "정치·시사", aliases: ["상임위"], meaning: "국회에서 분야별(법사위, 기재위 등)로 법안과 정책을 먼저 심사하는 위원회예요." },
-    { term: "발의", category: "정치·시사", aliases: [], meaning: "국회의원이나 정부가 새 법안이나 고치는 법안을 국회에 내는 것이에요." },
-    { term: "필리버스터", category: "정치·시사", aliases: ["무제한토론", "무제한 토론"], meaning: "소수 의견 쪽이 오래 발언해서 표결을 늦추는 합법적인 방식이에요. 국회법에서는 '무제한 토론'이라고 해요." },
-    { term: "거부권", category: "정치·시사", aliases: ["재의요구"], meaning: "대통령이 국회를 통과한 법안에 동의하지 않고 다시 논의하라고 돌려보내는 권한이에요." },
-    { term: "탄핵소추", category: "정치·시사", aliases: ["탄핵"], meaning: "대통령 등 고위 공직자가 직무상 중대한 잘못을 했을 때 국회가 파면을 요구하는 절차예요. 최종 판단은 헌법재판소가 해요." },
-    { term: "헌법재판소", category: "정치·시사", aliases: ["헌재"], meaning: "법률이 헌법에 어긋나는지, 탄핵이 정당한지 등을 판단하는 헌법 전문 재판기관이에요." },
-    { term: "여당·야당", category: "정치·시사", aliases: ["여당", "야당"], meaning: "여당은 정권을 잡고 정부를 이끄는 정당이고, 야당은 그렇지 않은 정당이에요." },
-    { term: "원내대표", category: "정치·시사", aliases: [], meaning: "국회 안에서 정당 소속 의원들을 대표하고, 국회 운영과 협상을 맡는 사람이에요." },
-    { term: "청문회", category: "정치·시사", aliases: [], meaning: "국회가 공직 후보자나 중요한 사안에 대해 의견을 듣고 따져 묻는 절차예요." },
-    { term: "국정조사", category: "정치·시사", aliases: [], meaning: "국회가 특정 사건이나 의혹의 진상을 직접 조사하는 것이에요." },
-    { term: "국무회의", category: "정치·시사", aliases: [], meaning: "대통령과 국무총리, 장관들이 모여 정부의 중요 정책을 논의하는 회의예요." },
-    { term: "총선", category: "정치·시사", aliases: [], meaning: "국회의원을 뽑는 전국 선거예요. 4년마다 열려요." },
-    { term: "지방선거", category: "정치·시사", aliases: [], meaning: "시장·도지사·교육감과 지방의회 의원을 뽑는 선거예요. 4년마다 열려요." },
-    { term: "비례대표", category: "정치·시사", aliases: [], meaning: "정당이 받은 득표율에 따라 의석을 나눠 갖는 국회의원이에요. 지역구 의원은 그 지역에서 가장 많이 득표한 사람이에요." },
-    { term: "여론조사", category: "정치·시사", aliases: [], meaning: "일부 사람에게 물어서 전체 의견을 추정하는 조사예요. 표본 수, 응답률, 오차 범위를 함께 봐야 해요." },
-    { term: "특검(특별검사)", category: "정치·시사", aliases: ["특검", "특별검사"], meaning: "검찰 수사가 어렵거나 신뢰받기 어려운 사건을 따로 임명한 특별검사가 수사하는 제도예요." },
-  ];
-
+  // BUILTIN_TERMS(용어사전 기본 용어 50개)는 terms-data.js에 있어요. (이 <script> 태그보다 먼저 불러와요)
   const BUILTIN_CATEGORIES = ["전체", "주식", "경제", "정치·시사"];
   const TERM_KEY = "newsBiteTerms";
 
@@ -3022,11 +2965,13 @@
 
   // ----- 뜻 찾아보기용 사전 링크 -----
   // 네이버 백과사전 API는 어학사전이 아니라서 엉뚱한 뜻이 나오는 일이 많아서 뺐어요.
-  // 대신 기본 용어에 없는 말은 아래 사전을 새 탭으로 열어 뜻을 확인하고, 내 말로 정리해서 담게 해요.
+  // 네이버 국어사전은 공개 API가 없고 사전 페이지도 자바스크립트로 내용을 그려서 서버가 대신 읽어올 수 없어요.
+  // 그래서 아래 사전은 새 탭으로 열어 직접 확인하는 용도로만 남겨두고,
+  // 실제 뜻 미리보기는 서버가 결과를 완성해서 보내주는 우리말샘에서 가져와요. (아래 /api/dictionary)
   const DICTIONARY_LINKS = [
     { label: "네이버 국어사전", url: (q) => `https://ko.dict.naver.com/#/search?query=${encodeURIComponent(q)}` },
     { label: "우리말샘", url: (q) => `https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(q)}` },
-    { label: "네이버 지식백과", url: (q) => `https://terms.naver.com/search.naver?query=${encodeURIComponent(q)}` },
+    { label: "Google 사전", url: (q) => `https://www.google.com/search?q=${encodeURIComponent(q + " 뜻")}` },
   ];
 
   // ----- 용어 카드 (검색 결과 / 기본 용어 목록에서 "사전에 담기" 버튼이 붙은 카드) -----
@@ -3101,34 +3046,15 @@
     return card;
   }
 
-  // 검색어에 대한 결과를 container에 그려요. (기본 용어 → 사전 링크 → 직접 쓰기)
-  function renderLookupResults(container, query, source) {
-    container.innerHTML = "";
+  // 사전 링크 버튼 + "직접 뜻 쓰기" 영역을 만들어 container에 붙여요.
+  // 위에서 뜻을 찾았는지와 상관없이 항상 나오는, 서로 나란한 별개의 선택지예요.
+  // (미리보기에서 고르기 / 마음에 안 들면 사전에서 직접 확인하기 / 내 말로 정리해서 쓰기 — 셋 다 동등한 선택지)
+  function appendDictionaryActions(container, query, source) {
+    const hint = document.createElement("p");
+    hint.className = "term-hint";
+    hint.textContent = "위 뜻이 마음에 안 들면 사전에서 직접 확인해보거나, 내 말로 정리해서 써보세요.";
+    container.appendChild(hint);
 
-    const matches = searchBuiltin(query).slice(0, 3);
-    matches.forEach((entry) => {
-      container.appendChild(
-        createTermResultCard(
-          {
-            term: entry.term,
-            meaning: entry.meaning,
-            tag: entry.category,
-            meaningSource: { kind: "builtin", label: "뉴스한입 기본 용어" },
-          },
-          source
-        )
-      );
-    });
-
-    if (matches.length === 0) {
-      const notice = document.createElement("p");
-      notice.className = "summary-status";
-      notice.textContent =
-        "기본 용어에 없는 말이에요. 아래 사전에서 뜻을 확인한 뒤, 내 말로 정리해서 담아보세요.";
-      container.appendChild(notice);
-    }
-
-    // 뜻을 찾아볼 수 있는 사전 링크 + 직접 뜻 쓰기
     const actions = document.createElement("div");
     actions.className = "lookup-actions";
 
@@ -3149,10 +3075,9 @@
     actions.appendChild(writeToggle);
     container.appendChild(actions);
 
-    // 기본 용어에 없으면 바로 쓸 수 있게 열어둬요.
     const writeBox = document.createElement("div");
     writeBox.className = "lookup-write";
-    writeBox.hidden = matches.length > 0;
+    writeBox.hidden = true;
 
     const writeInput = document.createElement("textarea");
     writeInput.className = "bookmark-memo";
@@ -3182,6 +3107,75 @@
       writeBox.hidden = !writeBox.hidden;
       if (!writeBox.hidden) writeInput.focus();
     });
+  }
+
+  // 검색어에 대한 결과를 container에 그려요. (기본 용어 → 우리말샘 뜻풀이 → 사전 링크 → 직접 쓰기)
+  // 우리말샘 조회는 서버(/api/dictionary)에 다녀와야 해서 시간이 조금 걸려요. 그 사이에 같은 칸에서
+  // 다른 검색이 또 시작되면, 먼저 보낸 요청의 결과가 나중에 도착해도 화면을 덮어쓰지 않도록 번호표를 써요.
+  async function renderLookupResults(container, query, source) {
+    container.innerHTML = "";
+    const token = (container.lookupToken = (container.lookupToken || 0) + 1);
+
+    const matches = searchBuiltin(query).slice(0, 3);
+    matches.forEach((entry) => {
+      container.appendChild(
+        createTermResultCard(
+          {
+            term: entry.term,
+            meaning: entry.meaning,
+            tag: entry.category,
+            meaningSource: { kind: "builtin", label: "뉴스한입 기본 용어" },
+          },
+          source
+        )
+      );
+    });
+
+    // 기본 용어에 이미 있으면, 굳이 우리말샘까지 조회하지 않고 바로 사전 링크·직접 쓰기로 넘어가요.
+    if (matches.length > 0) {
+      appendDictionaryActions(container, query, source);
+      return;
+    }
+
+    const loadingEl = document.createElement("p");
+    loadingEl.className = "summary-status";
+    loadingEl.textContent = "우리말샘에서 뜻을 찾는 중...";
+    container.appendChild(loadingEl);
+
+    let dictEntries = [];
+    try {
+      const response = await fetch(`/api/dictionary?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      if (response.ok) dictEntries = data.entries || [];
+    } catch (error) {
+      // 사전 조회에 실패해도 아래 사전 링크·직접 쓰기로 이어갈 수 있으니 조용히 넘어가요.
+    }
+
+    if (token !== container.lookupToken) return; // 그사이 다른 검색이 시작됐으면 이 결과는 버려요.
+    loadingEl.remove();
+
+    dictEntries.slice(0, 3).forEach((entry) => {
+      container.appendChild(
+        createTermResultCard(
+          {
+            term: query,
+            meaning: entry.meaning,
+            tag: [entry.pos, entry.field].filter(Boolean).join(" "),
+            meaningSource: { kind: "dict", label: "우리말샘", url: entry.url },
+          },
+          source
+        )
+      );
+    });
+
+    if (dictEntries.length === 0) {
+      const notice = document.createElement("p");
+      notice.className = "summary-status";
+      notice.textContent = "기본 용어와 우리말샘 어디에도 없는 말이에요.";
+      container.appendChild(notice);
+    }
+
+    appendDictionaryActions(container, query, source);
   }
 
   // 검색창 + 결과 영역 한 벌. (용어사전 화면과 뉴스 카드의 용어 찾기 패널이 같이 써요)
@@ -3359,7 +3353,7 @@
 
     const tagEl = document.createElement("span");
     tagEl.className = "term-tag";
-    tagEl.textContent = { builtin: "기본 용어", encyc: "백과사전", custom: "직접 작성" }[saved.meaningSource.kind] || "용어";
+    tagEl.textContent = { builtin: "기본 용어", dict: "우리말샘", encyc: "백과사전", custom: "직접 작성" }[saved.meaningSource.kind] || "용어";
     top.appendChild(tagEl);
 
     const spacer = document.createElement("span");
@@ -3778,7 +3772,7 @@
         if (!loaded) {
           // 키워드가 있으면 키워드로, 없으면 제목 전체로 검색
           const searchQuery = keywords.length > 0 ? keywords.join(" ") : title;
-          loadRelatedArticles(searchQuery, relatedPanel);
+          loadRelatedArticles(searchQuery, relatedPanel, { excludeUrl: url, keywords });
           loaded = true;
         }
       });
@@ -3853,6 +3847,38 @@
     return `${y}${m}${d}`;
   }
 
+  // 기사의 대표 주소를 돌려줘요. (원문 주소가 있으면 그걸, 없으면 네이버 뉴스 링크를 써요)
+  function getArticleUrl(item) {
+    return item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
+  }
+
+  // 검색 결과 안에 주소가 같은 기사가 중복으로 들어 있으면 하나만 남겨요.
+  // excludeUrl을 주면, 지금 보고 있던 원본 기사 자체도 "관련 기사"에서 빼요.
+  function dedupeByUrl(items, excludeUrl) {
+    const seen = new Set();
+    return items.filter((item) => {
+      const url = getArticleUrl(item);
+      if (excludeUrl && url === excludeUrl) return false;
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
+  }
+
+  // 검색어가 여러 단어일 때, 네이버 API가 단어 중 하나만 겹쳐도 결과에 끼워 넣는 경우가 있어서
+  // 제목·요약 어디에도 검색 키워드가 하나도 없는(=사실상 무관한) 기사는 걸러내요.
+  // (다 걸러져서 하나도 안 남으면, 그냥 안 보여주는 것보다는 원래 목록을 그대로 쓰는 게 나아요)
+  function filterRelevantItems(items, keywords) {
+    if (!keywords || keywords.length === 0) return items;
+
+    const filtered = items.filter((item) => {
+      const haystack = cleanText(item.title) + " " + cleanText(item.description || "");
+      return keywords.some((keyword) => haystack.includes(keyword));
+    });
+
+    return filtered.length > 0 ? filtered : items;
+  }
+
   // "관심있어요"로 찾는 관련 기사는, 그냥 최신순으로 다 가져오면 같은 날 나온
   // 비슷한 기사들만 잔뜩 보일 수 있어서 날짜를 최대한 다양하게 섞어서 보여줘요.
   // - 먼저 서로 다른 날짜의 기사를 하나씩 우선적으로 담고,
@@ -3885,9 +3911,11 @@
 
   // 검색어(키워드 또는 제목)를 받아서, 관련 기사를 불러와 패널에 채워 넣는 함수
   // (AI 요약 없이, 네이버 검색 결과를 제목 + 스니펫 + 원문 링크 형태로 그대로 보여줌)
-  // filterDateStr("YYYYMMDD")이 주어지면, 그 날짜에 발행된 기사를 우선 보여줘요.
+  // options.filterDateStr("YYYYMMDD")이 주어지면, 그 날짜에 발행된 기사만 보여줘요.
   // (주식 종목의 "관련 뉴스"는 주가 기준일자와 맞춰서 보여주기 위함이에요)
-  // impactStockName(종목명)이 주어지면, 기사마다 "+ / −" 주가 영향 표시 버튼을 붙여요.
+  // options.impactStockName(종목명)이 주어지면, 기사마다 "+ / −" 주가 영향 표시 버튼을 붙여요.
+  // options.excludeUrl은 지금 보고 있는 원본 기사 주소예요. (관련 기사 목록에 자기 자신이 다시 나오지 않도록)
+  // options.keywords는 관련성이 너무 낮은 기사를 걸러낼 때 쓰는 검색 키워드 목록이에요.
   const STOCK_NEWS_COUNT = 7; // 종목 뉴스는 중복을 없앤 뒤 최대 이 개수만 보여줘요
 
   // 기사 하나에 붙는 "+ / −" 버튼 한 쌍을 만들어요. 같은 버튼을 다시 누르면 표시가 지워져요.
@@ -3943,7 +3971,9 @@
     return wrap;
   }
 
-  async function loadRelatedArticles(searchQuery, panelElement, filterDateStr, impactStockName) {
+  async function loadRelatedArticles(searchQuery, panelElement, options = {}) {
+    const { filterDateStr, impactStockName, excludeUrl, keywords } = options;
+
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
@@ -3957,25 +3987,31 @@
         throw new Error(data.error || "요청에 실패했습니다.");
       }
 
-      let items = data.items || [];
+      // 검색 결과에 원본 기사 자신이나, 주소가 같은 중복 기사가 섞여 있으면 먼저 빼요.
+      let items = dedupeByUrl(data.items || [], excludeUrl);
 
       if (impactStockName) {
-        // 주식 종목: 주가 기준일자가 있으면 그 날짜에 발행된 뉴스만 (없으면 전체에서)
+        // 주식 종목: 주가 기준일자와 다른 날짜의 기사는 주가 추측에 도움이 안 되니 아예 제외해요.
+        // (기준일자를 아직 모르면(주가를 못 불러온 경우) 날짜 제한 없이 보여줘요)
         if (filterDateStr) {
-          const sameDateItems = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
-          if (sameDateItems.length > 0) items = sameDateItems;
+          items = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
         }
 
         // 같은 사건을 다룬 중복 기사는 하나로 합치고, 최대 7개만 보여줘요.
         // (모든 기사에 종목명이 들어 있으니, 종목명은 비교에서 빼요.)
         items = pickRepresentatives(items, STOCK_NEWS_COUNT, [searchQuery]);
       } else {
-        // 일반 기사("관심있어요"): 최근 일주일간 하루에 하나씩만 뽑아 다양하게 보여줌
+        // 일반 기사("관심있어요"): 검색어와 아예 무관한 기사를 먼저 걸러내고,
+        // 최근 일주일간 하루에 하나씩만 뽑아 다양하게 보여줌
+        items = filterRelevantItems(items, keywords);
         items = pickOnePerDayForPastWeek(items);
       }
 
       if (items.length === 0) {
-        panelElement.innerHTML = '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
+        panelElement.innerHTML =
+          impactStockName && filterDateStr
+            ? `<p class="summary-status">${formatBaseDateLabel(filterDateStr)}에 발행된 관련 기사를 찾지 못했어요.</p>`
+            : '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
         return;
       }
 
@@ -4331,7 +4367,8 @@
   // ===============================
   // 내 데이터 백업 (내보내기 / 가져오기)
   // 찜·종목·+/− 표시·용어사전은 이 브라우저의 localStorage에만 있어서, 브라우저 데이터를 지우면 사라져요.
-  // 파일(.json)로 저장해뒀다가 다시 불러올 수 있게 해요.
+  // 내보내면 더블클릭으로 바로 열어볼 수 있는 .html 리포트 파일이 만들어져요. (JSON 파일이라 메모장으로만
+  // 열리던 걸, 예쁘게 정리된 화면 + 그 안에 숨겨둔 원본 데이터를 함께 담은 형태로 바꿨어요)
   // 가져올 때는 "덮어쓰기"가 아니라 "합치기"예요. 지금 있는 데이터는 지워지지 않고, 없는 것만 더해져요.
   // ===============================
   const BACKUP_KEYS = [BOOKMARK_KEY, STOCK_KEY, IMPACT_KEY, TERM_KEY];
@@ -4339,6 +4376,113 @@
   // 외부 파일에서 온 주소는 http/https만 받아요. (javascript: 같은 주소가 링크로 실행되지 않게)
   function isHttpUrl(value) {
     return typeof value === "string" && /^https?:\/\//i.test(value);
+  }
+
+  // 리포트 화면에 값을 그대로 끼워 넣어도 HTML이 깨지거나 스크립트가 실행되지 않도록 이스케이프해요.
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // 백업 데이터를 사람이 보기 좋은 리포트 페이지(.html)로 만들어요.
+  // 이 페이지 안에는 눈에 보이는 요약 화면과 함께, 그대로 복원할 수 있는 원본 JSON도 숨겨서 담아둬요.
+  function buildBackupReportHtml(data) {
+    const bookmarks = data[BOOKMARK_KEY] || [];
+    const stocks = data[STOCK_KEY] || [];
+    const terms = data[TERM_KEY] || [];
+    const generatedAt = new Date().toLocaleString("ko-KR");
+
+    const bookmarksHtml = bookmarks.length
+      ? bookmarks
+          .map(
+            (b) => `
+      <div class="item">
+        <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(b.title)}</a>
+        ${b.memo ? `<p class="memo">📝 ${escapeHtml(b.memo)}</p>` : ""}
+      </div>`
+          )
+          .join("")
+      : `<p class="empty">찜한 뉴스가 없어요.</p>`;
+
+    const stocksHtml = stocks.length
+      ? `<div class="chips">${stocks.map((s) => `<span class="chip">${escapeHtml(s)}</span>`).join("")}</div>`
+      : `<p class="empty">등록한 종목이 없어요.</p>`;
+
+    const termsHtml = terms.length
+      ? terms
+          .map((t) => {
+            const label = (t.meaningSource && t.meaningSource.label) || "";
+            const sourcesHtml = (t.sources || [])
+              .map(
+                (s) =>
+                  `<div class="source-item"><a href="${escapeHtml(s.articleUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.articleTitle || s.articleUrl)}</a></div>`
+              )
+              .join("");
+            return `
+      <div class="item">
+        <div class="term-head"><strong>${escapeHtml(t.term)}</strong>${label ? ` <span class="tag">${escapeHtml(label)}</span>` : ""}</div>
+        <p>${escapeHtml(t.meaning)}</p>
+        ${t.memo ? `<p class="memo">📝 ${escapeHtml(t.memo)}</p>` : ""}
+        ${sourcesHtml ? `<div class="sources">${sourcesHtml}</div>` : ""}
+      </div>`;
+          })
+          .join("")
+      : `<p class="empty">담아둔 용어가 없어요.</p>`;
+
+    // 닫는 스크립트 태그 문자열이 데이터 안에 섞여 있어도 태그가 일찍 끝나지 않도록 이스케이프해요.
+    const jsonPayload = JSON.stringify({
+      app: "newsBite",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    }).replace(/</g, "\\u003c");
+
+    return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>뉴스한입 백업 - ${escapeHtml(generatedAt)}</title>
+<style>
+  body { font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif; background: #f7f9fc; color: #1b1f27; margin: 0; padding: 32px 6% 60px; line-height: 1.6; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .meta { color: #6b7280; font-size: 0.85rem; margin-bottom: 30px; }
+  h2 { font-size: 1.1rem; margin: 34px 0 14px; border-bottom: 2px solid #2f6fed; padding-bottom: 6px; display: inline-block; }
+  .item { background: #fff; border: 1px solid #e5e9f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+  .item a { color: #1e4fc4; font-weight: 600; text-decoration: none; }
+  .item a:hover { text-decoration: underline; }
+  .memo { margin: 6px 0 0; font-size: 0.85rem; color: #6b7280; }
+  .empty { color: #6b7280; font-size: 0.9rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: #eaf1ff; color: #1e4fc4; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }
+  .tag { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eaf1ff; color: #1e4fc4; }
+  .sources { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e9f0; display: flex; flex-direction: column; gap: 4px; }
+  .source-item { font-size: 0.85rem; }
+  .note { margin-top: 40px; padding: 14px 16px; background: #fff3cd; border-radius: 10px; font-size: 0.85rem; color: #92720a; }
+</style>
+</head>
+<body>
+  <h1>📰 뉴스한입 백업 리포트</h1>
+  <p class="meta">생성 시각: ${escapeHtml(generatedAt)}</p>
+
+  <h2>❤️ 찜한 뉴스 (${bookmarks.length})</h2>
+  ${bookmarksHtml}
+
+  <h2>📊 관심 종목 (${stocks.length})</h2>
+  ${stocksHtml}
+
+  <h2>📖 내 용어사전 (${terms.length})</h2>
+  ${termsHtml}
+
+  <p class="note">이 파일 자체가 백업이에요. 뉴스한입 사이트의 "📥 가져오기" 버튼으로 이 파일을 다시 올리면 데이터를 복원할 수 있어요.</p>
+
+  <script type="application/json" id="newsbite-backup-data">${jsonPayload}<\/script>
+</body>
+</html>`;
   }
 
   function exportBackup() {
@@ -4357,11 +4501,11 @@
       return;
     }
 
-    const backup = { app: "newsBite", version: 1, exportedAt: new Date().toISOString(), data };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const html = buildBackupReportHtml(data);
+    const blob = new Blob([html], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `newsbite-backup-${toDateStr(new Date())}.json`;
+    link.download = `newsbite-backup-${toDateStr(new Date())}.html`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -4467,15 +4611,20 @@
 
     const reader = new FileReader();
     reader.onload = () => {
+      const text = String(reader.result);
       let backup = null;
+
+      // 새 백업(.html)은 안에 숨겨둔 <script id="newsbite-backup-data">에 원본 JSON이 들어 있어요.
+      // 예전에 만든 .json 백업 파일도 그대로 읽을 수 있게, 없으면 파일 전체를 JSON으로 시도해요.
+      const embedded = text.match(/<script[^>]*id="newsbite-backup-data"[^>]*>([\s\S]*?)<\/script>/i);
       try {
-        backup = JSON.parse(reader.result);
+        backup = JSON.parse(embedded ? embedded[1] : text);
       } catch (error) {
         backup = null;
       }
 
       if (!backup || backup.app !== "newsBite" || !backup.data || typeof backup.data !== "object") {
-        alert("뉴스한입 백업 파일이 아니에요. '내보내기'로 저장한 .json 파일을 골라주세요.");
+        alert("뉴스한입 백업 파일이 아니에요. '내보내기'로 저장한 파일을 골라주세요.");
         return;
       }
 
@@ -4501,3 +4650,4 @@
 
 </body>
 </html>
+
