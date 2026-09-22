@@ -2360,6 +2360,10 @@
       return JSON.parse(localStorage.getItem(DAY_CHANGE_KEY)) || {};
     } catch (error) {
       return {};
+    }
+  }
+
+  // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
 
   // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
   // 아직 데이터가 없으면 { status: "pending" }, 그 밖의 실패는 { status: "error" }
