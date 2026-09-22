@@ -2642,13 +2642,10 @@
     nameGroup.appendChild(nameEl);
     nameGroup.appendChild(priceEl);
 
-    // 주가 기준일자(예: "20260916")를 저장해뒀다가, 관련 뉴스도 같은 날짜 기준으로 찾을 때 써요.
-    let stockBaseDate = null;
     let stockCode = null; // "내 판단 돌아보기"에서 과거 주가를 조회할 때 같이 보내면 더 빨라요
 
     // 카드가 만들어지자마자 바로 주가를 불러옵니다.
     loadStockPrice(stockName, priceEl, (baseDate, code) => {
-      stockBaseDate = baseDate;
       stockCode = code;
     });
 
@@ -2687,8 +2684,8 @@
       newsBtn.textContent = "📰 관련 뉴스 접기";
 
       if (!loaded) {
-        // 주가 기준일자를 넘겨서, 그 날짜에 발행된 뉴스 위주로 찾도록 해요.
-        loadRelatedArticles(stockName, relatedPanel, { filterDateStr: stockBaseDate, impactStockName: stockName });
+        // 예측해볼 소재이므로, 이미 결과가 나온 과거 기사 말고 오늘 발행된 기사만 보여줘요.
+        loadRelatedArticles(stockName, relatedPanel, { impactStockName: stockName });
         loaded = true;
       }
     });
@@ -3926,47 +3923,14 @@
   // options.keywords는 관련성이 너무 낮은 기사를 걸러낼 때 쓰는 검색 키워드 목록이에요.
   const STOCK_NEWS_COUNT = 7; // 종목 뉴스는 중복을 없앤 뒤 최대 이 개수만 보여줘요
 
-  // 종목 뉴스: 원하는 날짜(targetDateStr, "YYYYMMDD")의 기사를 찾을 때까지 최신순으로 100개씩
-  // 나눠서 가져와요. 인기 종목은 최신 기사만 100개 안에 가득 차서 원하는 날짜가 밀려날 수 있는데,
-  // 그렇다고 한 번에 1000개까지 다 받아오면 호출이 너무 많아지고 느려지니, 아래 방식으로 필요한 만큼만 받아요.
-  // - 받아온 100개 안에 그 날짜 기사가 있으면 바로 멈춰요.
-  // - 100개가 전부 그 날짜보다 예전 기사면(=이미 지나쳐버렸으면) 더 받아봤자 소용없으니 멈춰요.
-  // - 최대 5번(500개)까지만 시도해요.
-  async function fetchNewsForDate(query, targetDateStr, maxPages = 5, perPage = 100) {
-    const targetTime = new Date(
-      `${targetDateStr.slice(0, 4)}-${targetDateStr.slice(4, 6)}-${targetDateStr.slice(6, 8)}`
-    ).getTime();
-
-    let allItems = [];
-    for (let page = 0; page < maxPages; page++) {
-      const start = page * perPage + 1;
-      const response = await fetch(
-        `/api/news?query=${encodeURIComponent(query)}&display=${perPage}&start=${start}`
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
-
-      const items = data.items || [];
-      if (items.length === 0) break; // 더 가져올 결과가 없어요.
-      allItems = allItems.concat(items);
-
-      if (items.some((item) => isSameDate(item.pubDate, targetDateStr))) break; // 이 페이지에서 찾았어요.
-
-      const oldestTime = new Date(items[items.length - 1].pubDate).getTime();
-      if (!Number.isNaN(oldestTime) && !Number.isNaN(targetTime) && oldestTime < targetTime) break; // 이미 그 날짜를 지나쳤어요.
-    }
-
-    return allItems;
-  }
-
   // 기사 하나에 붙는 "+ / −" 버튼 한 쌍을 만들어요. 같은 버튼을 다시 누르면 표시가 지워져요.
   function createImpactButtons(stockName, url, meta = {}) {
     const wrap = document.createElement("div");
     wrap.className = "impact-buttons";
 
     const defs = [
-      { value: "up", label: "+", title: "주가에 긍정적인 영향" },
-      { value: "down", label: "−", title: "주가에 부정적인 영향" },
+      { value: "up", label: "+", title: "오를 것 같아요" },
+      { value: "down", label: "−", title: "내릴 것 같아요" },
     ];
 
     const buttons = defs.map((def) => {
@@ -4013,39 +3977,28 @@
   }
 
   async function loadRelatedArticles(searchQuery, panelElement, options = {}) {
-    const { filterDateStr, impactStockName, excludeUrl, keywords } = options;
+    const { impactStockName, excludeUrl, keywords } = options;
 
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
-      let rawItems;
+      const displayCount = impactStockName ? 100 : 30;
+      const response = await fetch(
+        `/api/news?query=${encodeURIComponent(searchQuery)}&display=${displayCount}`
+      );
+      const data = await response.json();
 
-      if (impactStockName && filterDateStr) {
-        // 종목 뉴스 + 기준일자가 있으면: 그 날짜 기사가 나올 때까지 나눠서 받아와요.
-        rawItems = await fetchNewsForDate(searchQuery, filterDateStr);
-      } else {
-        // 그 밖(일반 "관심있어요", 또는 기준일자를 아직 못 불러온 종목)은 한 번만 받아와요.
-        const displayCount = impactStockName ? 100 : 30;
-        const response = await fetch(
-          `/api/news?query=${encodeURIComponent(searchQuery)}&display=${displayCount}`
-        );
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "요청에 실패했습니다.");
-        }
-        rawItems = data.items || [];
+      if (!response.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
       }
+      const rawItems = data.items || [];
 
       // 검색 결과에 원본 기사 자신이나, 주소가 같은 중복 기사가 섞여 있으면 먼저 빼요.
       let items = dedupeByUrl(rawItems, excludeUrl);
 
       if (impactStockName) {
-        // 주식 종목: 주가 기준일자와 다른 날짜의 기사는 주가 추측에 도움이 안 되니 아예 제외해요.
-        // (기준일자를 아직 모르면(주가를 못 불러온 경우) 날짜 제한 없이 보여줘요)
-        if (filterDateStr) {
-          items = items.filter((item) => isSameDate(item.pubDate, filterDateStr));
-        }
+        // 주식 종목: 예측해볼 소재이므로, 이미 결과가 나온 과거 기사 말고 오늘 발행된 기사만 남겨요.
+        items = items.filter((item) => isPublishedToday(item.pubDate));
 
         // 같은 사건을 다룬 중복 기사는 하나로 합치고, 최대 7개만 보여줘요.
         // (모든 기사에 종목명이 들어 있으니, 종목명은 비교에서 빼요.)
@@ -4058,10 +4011,9 @@
       }
 
       if (items.length === 0) {
-        panelElement.innerHTML =
-          impactStockName && filterDateStr
-            ? `<p class="summary-status">${formatBaseDateLabel(filterDateStr)}에 발행된 관련 기사를 찾지 못했어요.</p>`
-            : '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
+        panelElement.innerHTML = impactStockName
+          ? '<p class="summary-status">오늘 발행된 관련 기사를 아직 찾지 못했어요.</p>'
+          : '<p class="summary-status">관련 기사를 찾지 못했어요.</p>';
         return;
       }
 
@@ -4070,7 +4022,7 @@
       if (impactStockName) {
         const hint = document.createElement("p");
         hint.className = "impact-hint";
-        hint.textContent = "기사가 주가에 준 영향을 직접 표시해보세요. (+ 긍정 / − 부정, 다시 누르면 취소)";
+        hint.textContent = "이 기사가 주가에 어떤 영향을 줄지 예측해보세요. (+ 오를 것 같아요 / − 내릴 것 같아요, 다시 누르면 취소)";
         panelElement.appendChild(hint);
       }
 
