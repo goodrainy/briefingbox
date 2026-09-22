@@ -3993,4 +3993,511 @@
         panelElement.appendChild(
           createArticleCard(
             relatedItem,
-            impactStockName ? { action: "impact", stockName:
+            impactStockName ? { action: "impact", stockName: impactStockName } : { action: "none" }
+          )
+        );
+      });
+    } catch (error) {
+      panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오지 못했어요.</p>';
+      console.error(error);
+    }
+  }
+
+  // ===============================
+  // 정치·경제 카테고리 전용: 대표 언론사별 필터
+  // (다른 카테고리 화면/로직에는 영향을 주지 않아요)
+  // ===============================
+  const OUTLET_FILTER_CATEGORIES = ["정치", "경제"];
+
+  // 언론사 필터 버튼으로 보여줄 대표 언론사 (아래 도메인 표에 있는 이름이어야 해요)
+  const MAJOR_PRESS_OUTLETS = ["연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문"];
+
+  // 네이버 API는 언론사 이름을 주지 않아서, 기사 원문 주소(URL)의 도메인으로 언론사를 알아내요.
+  // 표에 없는 도메인은 "언론사 모름"으로 처리돼요. (새 언론사는 여기에 한 줄씩 추가하면 돼요)
+  const OUTLET_DOMAIN_MAP = {
+    "yna.co.kr": "연합뉴스",
+    "yonhapnewstv.co.kr": "연합뉴스TV",
+    "chosun.com": "조선일보",
+    "biz.chosun.com": "조선비즈",
+    "sports.chosun.com": "스포츠조선",
+    "joongang.co.kr": "중앙일보",
+    "donga.com": "동아일보",
+    "sports.donga.com": "스포츠동아",
+    "hani.co.kr": "한겨레",
+    "khan.co.kr": "경향신문",
+    "kmib.co.kr": "국민일보",
+    "hankookilbo.com": "한국일보",
+    "munhwa.com": "문화일보",
+    "segye.com": "세계일보",
+    "seoul.co.kr": "서울신문",
+    "mk.co.kr": "매일경제",
+    "hankyung.com": "한국경제",
+    "sedaily.com": "서울경제",
+    "edaily.co.kr": "이데일리",
+    "mt.co.kr": "머니투데이",
+    "fnnews.com": "파이낸셜뉴스",
+    "asiae.co.kr": "아시아경제",
+    "heraldcorp.com": "헤럴드경제",
+    "news1.kr": "뉴스1",
+    "newsis.com": "뉴시스",
+    "nocutnews.co.kr": "노컷뉴스",
+    "ohmynews.com": "오마이뉴스",
+    "pressian.com": "프레시안",
+    "dailian.co.kr": "데일리안",
+    "newdaily.co.kr": "뉴데일리",
+    "ajunews.com": "아주경제",
+    "sisajournal.com": "시사저널",
+    "kbs.co.kr": "KBS",
+    "imbc.com": "MBC",
+    "sbs.co.kr": "SBS",
+    "ytn.co.kr": "YTN",
+    "jtbc.co.kr": "JTBC",
+    "mbn.co.kr": "MBN",
+    "tvchosun.com": "TV조선",
+    "ichannela.com": "채널A",
+    "etnews.com": "전자신문",
+    "zdnet.co.kr": "ZDNet Korea",
+    "dt.co.kr": "디지털타임스",
+    "sportsseoul.com": "스포츠서울",
+    "osen.co.kr": "OSEN",
+    "starnewskorea.com": "스타뉴스",
+    "xportsnews.com": "엑스포츠뉴스",
+  };
+
+  function extractDomain(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch (error) {
+      return "";
+    }
+  }
+
+  // 원문 주소의 도메인으로 언론사 이름을 찾아요. (모르는 도메인이면 null)
+  // "sports.chosun.com"이면 먼저 "sports.chosun.com"을, 없으면 "chosun.com"을 찾는 식으로
+  // 더 구체적인 도메인부터 확인해서 계열 매체(조선비즈 등)가 본지로 섞이지 않게 해요.
+  function matchOutlet(item) {
+    const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
+    const domain = extractDomain(url);
+    if (!domain) return null;
+
+    const parts = domain.split(".");
+    for (let i = 0; i < parts.length - 1; i++) {
+      const candidate = parts.slice(i).join(".");
+      if (OUTLET_DOMAIN_MAP[candidate]) return OUTLET_DOMAIN_MAP[candidate];
+    }
+    return null;
+  }
+
+  // ===============================
+  // 오늘 / 어제 보기
+  // 네이버 검색 API에는 날짜 지정 기능이 없어서, "어제"는 관련도순(sim)으로 넉넉히(100개)
+  // 받아온 뒤 어제 발행된 기사만 남기는 방식이에요. 그래서 어제 기사가 적게 나올 수 있어요.
+  // ===============================
+  let newsDayMode = "today";
+  let currentCategory = null;
+  let loadCounter = 0; // 빠르게 버튼을 여러 번 눌렀을 때 늦게 도착한 옛 응답을 무시하기 위한 번호표
+
+  function isYesterday(pubDateStr) {
+    const d = new Date(pubDateStr);
+    if (Number.isNaN(d.getTime())) return false;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return toDateStr(d) === toDateStr(yesterday);
+  }
+
+  function dayLabel() {
+    return newsDayMode === "yesterday" ? "어제의" : "오늘의";
+  }
+
+  async function fetchNewsPool(query, todayDisplayCount) {
+    const url =
+      newsDayMode === "yesterday"
+        ? `/api/news?query=${encodeURIComponent(query)}&display=100&sort=sim`
+        : `/api/news?query=${encodeURIComponent(query)}&display=${todayDisplayCount}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+
+    const items = data.items || [];
+    return newsDayMode === "yesterday" ? items.filter((item) => isYesterday(item.pubDate)) : items;
+  }
+
+  let politicsRawPool = [];
+  let politicsAllPool = [];
+  let politicsCategory = "정치";
+  let politicsOutletFilter = "all";
+
+  function filterPoliticsPool(pool) {
+    return pool.filter((item) => {
+      if (politicsOutletFilter !== "all" && matchOutlet(item) !== politicsOutletFilter) return false;
+      return true;
+    });
+  }
+
+  // 네이버 API는 언론사 정보를 따로 주지 않아서, 언론사 버튼을 누르면
+  // "카테고리 + 언론사 이름"으로 다시 검색한 뒤 원문 주소로 그 언론사 기사만 남겨요.
+  async function selectOutlet(outletName) {
+    politicsOutletFilter = outletName;
+    renderOutletFilterChips();
+
+    if (outletName === "all") {
+      loadCounter++;
+      politicsRawPool = politicsAllPool;
+      applyPoliticsFiltersAndRender();
+      return;
+    }
+
+    const token = ++loadCounter;
+    const requestedCategory = politicsCategory;
+    summaryList.innerHTML = "";
+    summaryTitle.textContent = `${outletName} ${requestedCategory} 뉴스를 불러오는 중...`;
+
+    try {
+      const query = `${categoryQueryMap[requestedCategory]} ${outletName}`;
+      const items = await fetchNewsPool(query, 30);
+      if (token !== loadCounter) return;
+
+      politicsRawPool = items.filter((item) => matchOutlet(item) === outletName);
+      applyPoliticsFiltersAndRender();
+    } catch (error) {
+      if (token !== loadCounter) return;
+      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+      console.error(error);
+    }
+  }
+
+  // 대표 언론사 버튼은 항상 전부 보여줘요.
+  function renderOutletFilterChips() {
+    const row = document.getElementById("outlet-filter-row");
+    row.innerHTML = '<span class="filter-label">언론사</span>';
+
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "filter-chip" + (politicsOutletFilter === "all" ? " active" : "");
+    allBtn.dataset.outlet = "all";
+    allBtn.textContent = "전체";
+    row.appendChild(allBtn);
+
+    MAJOR_PRESS_OUTLETS.forEach((outletName) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "filter-chip" + (politicsOutletFilter === outletName ? " active" : "");
+      btn.dataset.outlet = outletName;
+      btn.textContent = outletName;
+      row.appendChild(btn);
+    });
+
+    row.querySelectorAll(".filter-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectOutlet(btn.dataset.outlet);
+      });
+    });
+  }
+
+  function applyPoliticsFiltersAndRender() {
+    const filtered = filterPoliticsPool(politicsRawPool);
+    const hotItems = pickHotArticles(filtered, 5);
+
+    summaryList.innerHTML = "";
+
+    if (hotItems.length === 0) {
+      summaryTitle.textContent = `조건에 맞는 ${politicsCategory} 뉴스를 찾지 못했어요`;
+      return;
+    }
+
+    summaryTitle.textContent = `${dayLabel()} ${politicsCategory} 이슈 요약`;
+    hotItems.forEach((item) => {
+      summaryList.appendChild(createNewsCard(item));
+    });
+  }
+
+  // ===============================
+  // 스포츠 카테고리 전용: 제목 필터
+  // "스포츠"로 검색하면 스포츠 매체가 쓴 연예·부고 기사 등도 섞여 나오기 때문에,
+  // 제목에 스포츠 관련 단어가 있는 기사만 남기고, 부고성 단어가 있으면 뺍니다.
+  // (다른 카테고리에는 적용되지 않아요)
+  // ===============================
+  const SPORTS_TITLE_KEYWORDS = [
+    "야구", "축구", "농구", "배구", "골프", "테니스", "탁구", "배드민턴", "핸드볼", "럭비",
+    "수영", "육상", "양궁", "펜싱", "유도", "태권도", "체조", "빙상", "스키", "컬링",
+    "올림픽", "월드컵", "아시안게임", "선수권", "리그", "챔피언", "KBO", "KBL", "MLB", "NBA", "PGA", "LPGA",
+    "경기", "선수", "우승", "결승", "홈런", "투수", "타자", "득점", "골든", "메달", "시즌",
+  ];
+  const SPORTS_EXCLUDE_KEYWORDS = ["부고", "모친상", "부친상", "별세", "빈소", "장례"];
+
+  function filterSportsTitles(items) {
+    return items.filter((item) => {
+      const title = cleanText(item.title);
+      if (SPORTS_EXCLUDE_KEYWORDS.some((word) => title.includes(word))) return false;
+      return SPORTS_TITLE_KEYWORDS.some((word) => title.includes(word));
+    });
+  }
+
+  // 선택한 카테고리의 실제 뉴스를 가져와서 요약 카드 목록으로 보여주는 함수
+  async function loadCategorySummary(category) {
+    const token = ++loadCounter;
+    currentCategory = category;
+    const isOutletCategory = OUTLET_FILTER_CATEGORIES.includes(category);
+
+    preview.classList.add("show");
+    summaryTitle.textContent = `${category} 뉴스를 불러오는 중...`;
+    summaryList.innerHTML = "";
+
+    // 정치·경제 카테고리일 때만 언론사 필터 UI를 보여줘요.
+    document.getElementById("politics-filters").hidden = !isOutletCategory;
+    if (isOutletCategory) {
+      politicsCategory = category;
+      politicsOutletFilter = "all";
+      politicsAllPool = [];
+      politicsRawPool = [];
+      renderOutletFilterChips();
+    }
+
+    try {
+      // 내가 만든 중계 서버(/api/news)에 검색어를 보내서 뉴스를 요청해요.
+      // 실제 네이버 API 키는 이 화면(JS)이 아니라 서버 쪽에만 저장되어 있어요.
+      // "핫한 기사"를 골라내려면 비교할 후보가 많아야 하므로 넉넉히 받아오는데,
+      // 정치·경제(언론사 필터)와 스포츠(제목 필터)는 걸러지는 기사가 많아서 최대치(30개)로 받아옵니다.
+      const query = categoryQueryMap[category];
+      const displayCount = isOutletCategory || category === "스포츠" ? 30 : 20;
+      const items = await fetchNewsPool(query, displayCount);
+      if (token !== loadCounter) return;
+
+      if (items.length === 0) {
+        summaryTitle.textContent =
+          newsDayMode === "yesterday"
+            ? `어제 ${category} 기사를 충분히 찾지 못했어요`
+            : `${category} 관련 뉴스를 찾지 못했어요`;
+        return;
+      }
+
+      if (isOutletCategory) {
+        // 정치·경제는 언론사 필터를 적용할 수 있도록 원본을 저장해두고 따로 그려요.
+        politicsRawPool = items;
+        politicsAllPool = items;
+        applyPoliticsFiltersAndRender();
+        return;
+      }
+
+      let candidates = items;
+      if (category === "스포츠") {
+        candidates = filterSportsTitles(items);
+        if (candidates.length === 0) {
+          summaryTitle.textContent = `${category} 관련 뉴스를 찾지 못했어요`;
+          return;
+        }
+      }
+
+      // 받아온 후보 중 "오늘 + 여러 언론사가 동시에 다루는" 기사 5개만 골라서 보여줘요.
+      const hotItems = pickHotArticles(candidates, 5);
+
+      summaryTitle.textContent = `${dayLabel()} ${category} 이슈 요약`;
+
+      // 뉴스 하나하나를 "더 보기"가 달린 카드로 만들어서 목록에 추가
+      hotItems.forEach((item) => {
+        summaryList.appendChild(createNewsCard(item));
+      });
+    } catch (error) {
+      if (token !== loadCounter) return;
+      summaryTitle.textContent = "뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+      console.error(error);
+    }
+  }
+
+  // 카테고리 버튼들에 클릭 이벤트 연결
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+
+      const category = chip.getAttribute("data-category");
+      loadCategorySummary(category);
+    });
+  });
+
+  // 오늘 / 어제 버튼: 누르면 지금 선택된 카테고리를 해당 날짜 기준으로 다시 불러와요.
+  const dayChips = document.querySelectorAll("#day-filter-row .filter-chip");
+  dayChips.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (newsDayMode === btn.dataset.day) return;
+
+      newsDayMode = btn.dataset.day;
+      dayChips.forEach((b) => b.classList.toggle("active", b === btn));
+      if (currentCategory) loadCategorySummary(currentCategory);
+    });
+  });
+
+  // ===============================
+  // 내 데이터 백업 (내보내기 / 가져오기)
+  // 찜·종목·+/− 표시·용어사전은 이 브라우저의 localStorage에만 있어서, 브라우저 데이터를 지우면 사라져요.
+  // 파일(.json)로 저장해뒀다가 다시 불러올 수 있게 해요.
+  // 가져올 때는 "덮어쓰기"가 아니라 "합치기"예요. 지금 있는 데이터는 지워지지 않고, 없는 것만 더해져요.
+  // ===============================
+  const BACKUP_KEYS = [BOOKMARK_KEY, STOCK_KEY, IMPACT_KEY, TERM_KEY];
+
+  // 외부 파일에서 온 주소는 http/https만 받아요. (javascript: 같은 주소가 링크로 실행되지 않게)
+  function isHttpUrl(value) {
+    return typeof value === "string" && /^https?:\/\//i.test(value);
+  }
+
+  function exportBackup() {
+    const data = {};
+    BACKUP_KEYS.forEach((key) => {
+      try {
+        const value = JSON.parse(localStorage.getItem(key));
+        if (value) data[key] = value;
+      } catch (error) {
+        // 읽을 수 없는 항목은 건너뛰어요.
+      }
+    });
+
+    if (Object.keys(data).length === 0) {
+      alert("아직 저장된 데이터가 없어요.");
+      return;
+    }
+
+    const backup = { app: "newsBite", version: 1, exportedAt: new Date().toISOString(), data };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `newsbite-backup-${toDateStr(new Date())}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  // 백업 파일의 내용을 지금 데이터에 합치고, 새로 추가된 개수를 돌려줘요.
+  function mergeBackupData(incoming) {
+    const added = { bookmarks: 0, stocks: 0, impacts: 0, terms: 0 };
+
+    // 찜한 기사: 주소가 같으면 이미 있는 걸로 봐요.
+    if (Array.isArray(incoming[BOOKMARK_KEY])) {
+      const list = getBookmarks();
+      incoming[BOOKMARK_KEY].forEach((bookmark) => {
+        if (!bookmark || !isHttpUrl(bookmark.url) || list.some((b) => b.url === bookmark.url)) return;
+        list.push({ title: String(bookmark.title || bookmark.url), url: bookmark.url, memo: String(bookmark.memo || "") });
+        added.bookmarks++;
+      });
+      localStorage.setItem(BOOKMARK_KEY, JSON.stringify(list));
+    }
+
+    // 관심 종목
+    if (Array.isArray(incoming[STOCK_KEY])) {
+      const stocks = getStocks();
+      incoming[STOCK_KEY].forEach((name) => {
+        if (typeof name === "string" && name.trim() && !stocks.includes(name)) {
+          stocks.push(name);
+          added.stocks++;
+        }
+      });
+      localStorage.setItem(STOCK_KEY, JSON.stringify(stocks));
+    }
+
+    // 주가 영향(+ / −) 표시: 이미 표시해둔 기사는 지금 값을 그대로 둬요.
+    const incomingImpacts = incoming[IMPACT_KEY];
+    if (incomingImpacts && typeof incomingImpacts === "object" && !Array.isArray(incomingImpacts)) {
+      const all = getAllImpacts();
+      Object.keys(incomingImpacts).forEach((stockName) => {
+        const perStock = incomingImpacts[stockName];
+        if (!perStock || typeof perStock !== "object") return;
+
+        Object.keys(perStock).forEach((url) => {
+          const entry = normalizeImpact(perStock[url]);
+          if (!isHttpUrl(url) || !entry || (entry.v !== "up" && entry.v !== "down")) return;
+          if (!all[stockName]) all[stockName] = {};
+          if (all[stockName][url]) return;
+
+          all[stockName][url] = { v: entry.v, d: String(entry.d), t: String(entry.t) };
+          added.impacts++;
+        });
+      });
+      localStorage.setItem(IMPACT_KEY, JSON.stringify(all));
+    }
+
+    // 용어사전: 같은 용어면 뜻은 지금 것을 두고, 없는 출처 기사만 더해요.
+    if (Array.isArray(incoming[TERM_KEY])) {
+      const list = getSavedTerms();
+      incoming[TERM_KEY].forEach((term) => {
+        if (!term || typeof term.term !== "string" || typeof term.meaning !== "string") return;
+
+        const sources = (Array.isArray(term.sources) ? term.sources : []).filter(
+          (s) => s && isHttpUrl(s.articleUrl)
+        );
+        const existing = list.find((saved) => normalizeTerm(saved.term) === normalizeTerm(term.term));
+
+        if (existing) {
+          sources.forEach((s) => {
+            if (!hasSameSource(existing, s)) existing.sources.push(s);
+          });
+          return;
+        }
+
+        const meaningSource =
+          term.meaningSource && typeof term.meaningSource.label === "string"
+            ? { ...term.meaningSource, url: isHttpUrl(term.meaningSource.url) ? term.meaningSource.url : undefined }
+            : { kind: "custom", label: "직접 작성" };
+
+        list.push({
+          term: term.term,
+          meaning: term.meaning,
+          meaningSource,
+          memo: String(term.memo || ""),
+          sources,
+          savedAt: term.savedAt || new Date().toISOString(),
+        });
+        added.terms++;
+      });
+      setSavedTerms(list);
+    }
+
+    return added;
+  }
+
+  document.getElementById("backup-export-btn").addEventListener("click", exportBackup);
+
+  const backupFileInput = document.getElementById("backup-file");
+  document.getElementById("backup-import-btn").addEventListener("click", () => backupFileInput.click());
+
+  backupFileInput.addEventListener("change", () => {
+    const file = backupFileInput.files[0];
+    backupFileInput.value = ""; // 같은 파일을 다시 골라도 동작하도록 비워둬요
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      let backup = null;
+      try {
+        backup = JSON.parse(reader.result);
+      } catch (error) {
+        backup = null;
+      }
+
+      if (!backup || backup.app !== "newsBite" || !backup.data || typeof backup.data !== "object") {
+        alert("뉴스한입 백업 파일이 아니에요. '내보내기'로 저장한 .json 파일을 골라주세요.");
+        return;
+      }
+
+      if (!confirm("백업 파일의 내용을 지금 데이터에 합칠까요?\n(지금 있는 데이터는 지워지지 않아요)")) return;
+
+      const added = mergeBackupData(backup.data);
+      renderBookmarks();
+      renderStocks();
+      renderMyTerms();
+      renderBuiltinList();
+
+      alert(
+        `가져왔어요!\n찜 ${added.bookmarks}개 · 종목 ${added.stocks}개 · 용어 ${added.terms}개 · +/− 표시 ${added.impacts}개가 새로 추가됐어요.`
+      );
+    };
+    reader.readAsText(file);
+  });
+
+  // 페이지를 열자마자, 이전에 저장해둔 찜 목록 / 관심 종목 목록을 화면에 보여줍니다.
+  renderBookmarks();
+  renderStocks();
+</script>
+
+</body>
+</html>
