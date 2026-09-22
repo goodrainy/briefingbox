@@ -1694,7 +1694,7 @@
         <span class="tag">뉴스 요약</span>
         <h4 id="summary-title">카테고리를 선택하면 여기에 요약이 표시돼요</h4>
 
-        <!-- 오늘 / 어제 기사 선택 -->
+        <!-- 오늘 / 지난 7일 기사 선택 -->
         <div class="filter-row day-filter" id="day-filter-row">
           <span class="filter-label">날짜</span>
           <button type="button" class="filter-chip active" data-day="today">오늘</button>
@@ -1812,9 +1812,10 @@
     © 2026 뉴스한입 · 포트폴리오 프로젝트 예시입니다
   </footer>
 
+<!-- 용어사전 기본 용어 50개(BUILTIN_TERMS)는 별도 파일에 있어요. 아래 script보다 먼저 불러와야 해요. -->
 <script src="terms-data.js"></script>
-
 <script>
+
   // ===============================
   // 카테고리 이름 -> 네이버 뉴스 검색에 사용할 검색어 매핑
   // (예: "IT" 버튼을 눌러도 검색은 "IT 과학"으로 더 정확하게 검색되도록)
@@ -2364,21 +2365,15 @@
   }
 
   // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
-
-  // 그날(dateStr) 종목의 종가 등락률을 가져와요. 결과: { baseDate, changeRate }
   // 아직 데이터가 없으면 { status: "pending" }, 그 밖의 실패는 { status: "error" }
   async function fetchDayChange(stockName, dateStr, code) {
     const cached = getDayChangeCache()[stockName];
     if (cached && cached[dateStr]) return cached[dateStr];
 
     try {
-      // 날짜별로 골고루 뽑으려면 후보가 많아야 하므로 넉넉히 받아옵니다.
-      // 종목 뉴스는 특정 날짜와 정확히 일치하는 기사만 남기기 때문에, 인기 종목처럼
-      // 최신 기사가 하루에도 많이 쏟아지면 30개 안에 그 날짜 기사가 아예 없을 수 있어요.
-      // 그래서 종목 뉴스는 API가 허용하는 최대치(100개)까지 받아와서 찾을 확률을 높여요.
-      const displayCount = impactStockName ? 100 : 30;
+      const codePart = code ? `&code=${encodeURIComponent(code)}` : "";
       const response = await fetch(
-        `/api/news?query=${encodeURIComponent(searchQuery)}&display=${displayCount}`
+        `/api/stock?name=${encodeURIComponent(stockName)}&date=${dateStr}${codePart}`
       );
       const data = await response.json();
 
@@ -3187,7 +3182,10 @@
   }
 
   // 검색창 + 결과 영역 한 벌. (용어사전 화면과 뉴스 카드의 용어 찾기 패널이 같이 써요)
-  function createLookupBox() {
+  // getDefaultSource(query)를 넘기면, run()이 source 없이 호출될 때(=글자를 클릭한 게 아니라
+  // 검색창에 직접 타이핑해서 찾을 때) 그 함수로 출처를 대신 만들어요. (기사 안 패널에서 씀)
+  // 안 넘기면(용어사전 탭의 독립된 검색창) 출처 없이 동작해요.
+  function createLookupBox(getDefaultSource) {
     const element = document.createElement("div");
     element.className = "lookup-box";
 
@@ -3207,16 +3205,17 @@
     const results = document.createElement("div");
     results.className = "lookup-results";
 
-    let lastSource = null;
-
-    // source를 넘기면 그 기사가 출처로 기록돼요. 안 넘기면 직전 값을 그대로 써요.
+    // source를 넘기면(글자를 클릭한 경우) 그 출처를 그대로 써요.
+    // 안 넘기면(직접 타이핑한 경우) getDefaultSource로 이번 검색어에 맞는 출처를 새로 만들어요.
     function run(query, source) {
       const q = (query || "").trim();
       if (!q) return;
 
-      if (source !== undefined) lastSource = source;
+      const resolvedSource =
+        source !== undefined ? source : typeof getDefaultSource === "function" ? getDefaultSource(q) : null;
+
       input.value = q;
-      renderLookupResults(results, q, lastSource);
+      renderLookupResults(results, q, resolvedSource);
     }
 
     searchBtn.addEventListener("click", () => run(input.value));
@@ -3292,7 +3291,8 @@
       hint.className = "term-hint";
       hint.textContent = "알고 싶은 단어를 눌러보세요. 파란 밑줄은 사전에 이미 있는 말이에요.";
 
-      lookupBox = createLookupBox();
+      // 검색창에 직접 타이핑해서 찾을 때도, 그 단어가 있는 문장을 찾아 출처로 남겨요.
+      lookupBox = createLookupBox((q) => buildSource(findContextSentence(q, info.title, info.description)));
       const pick = (word, context) => lookupBox.run(word, buildSource(context));
 
       const titleBox = document.createElement("div");
@@ -3926,6 +3926,39 @@
   // options.keywords는 관련성이 너무 낮은 기사를 걸러낼 때 쓰는 검색 키워드 목록이에요.
   const STOCK_NEWS_COUNT = 7; // 종목 뉴스는 중복을 없앤 뒤 최대 이 개수만 보여줘요
 
+  // 종목 뉴스: 원하는 날짜(targetDateStr, "YYYYMMDD")의 기사를 찾을 때까지 최신순으로 100개씩
+  // 나눠서 가져와요. 인기 종목은 최신 기사만 100개 안에 가득 차서 원하는 날짜가 밀려날 수 있는데,
+  // 그렇다고 한 번에 1000개까지 다 받아오면 호출이 너무 많아지고 느려지니, 아래 방식으로 필요한 만큼만 받아요.
+  // - 받아온 100개 안에 그 날짜 기사가 있으면 바로 멈춰요.
+  // - 100개가 전부 그 날짜보다 예전 기사면(=이미 지나쳐버렸으면) 더 받아봤자 소용없으니 멈춰요.
+  // - 최대 5번(500개)까지만 시도해요.
+  async function fetchNewsForDate(query, targetDateStr, maxPages = 5, perPage = 100) {
+    const targetTime = new Date(
+      `${targetDateStr.slice(0, 4)}-${targetDateStr.slice(4, 6)}-${targetDateStr.slice(6, 8)}`
+    ).getTime();
+
+    let allItems = [];
+    for (let page = 0; page < maxPages; page++) {
+      const start = page * perPage + 1;
+      const response = await fetch(
+        `/api/news?query=${encodeURIComponent(query)}&display=${perPage}&start=${start}`
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "요청에 실패했습니다.");
+
+      const items = data.items || [];
+      if (items.length === 0) break; // 더 가져올 결과가 없어요.
+      allItems = allItems.concat(items);
+
+      if (items.some((item) => isSameDate(item.pubDate, targetDateStr))) break; // 이 페이지에서 찾았어요.
+
+      const oldestTime = new Date(items[items.length - 1].pubDate).getTime();
+      if (!Number.isNaN(oldestTime) && !Number.isNaN(targetTime) && oldestTime < targetTime) break; // 이미 그 날짜를 지나쳤어요.
+    }
+
+    return allItems;
+  }
+
   // 기사 하나에 붙는 "+ / −" 버튼 한 쌍을 만들어요. 같은 버튼을 다시 누르면 표시가 지워져요.
   function createImpactButtons(stockName, url, meta = {}) {
     const wrap = document.createElement("div");
@@ -3985,18 +4018,27 @@
     panelElement.innerHTML = '<p class="summary-status">관련 기사를 불러오는 중...</p>';
 
     try {
-      // 날짜별로 골고루 뽑으려면 후보가 많아야 하므로 넉넉히 받아옵니다.
-      const response = await fetch(
-        `/api/news?query=${encodeURIComponent(searchQuery)}&display=30`
-      );
-      const data = await response.json();
+      let rawItems;
 
-      if (!response.ok) {
-        throw new Error(data.error || "요청에 실패했습니다.");
+      if (impactStockName && filterDateStr) {
+        // 종목 뉴스 + 기준일자가 있으면: 그 날짜 기사가 나올 때까지 나눠서 받아와요.
+        rawItems = await fetchNewsForDate(searchQuery, filterDateStr);
+      } else {
+        // 그 밖(일반 "관심있어요", 또는 기준일자를 아직 못 불러온 종목)은 한 번만 받아와요.
+        const displayCount = impactStockName ? 100 : 30;
+        const response = await fetch(
+          `/api/news?query=${encodeURIComponent(searchQuery)}&display=${displayCount}`
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "요청에 실패했습니다.");
+        }
+        rawItems = data.items || [];
       }
 
       // 검색 결과에 원본 기사 자신이나, 주소가 같은 중복 기사가 섞여 있으면 먼저 빼요.
-      let items = dedupeByUrl(data.items || [], excludeUrl);
+      let items = dedupeByUrl(rawItems, excludeUrl);
 
       if (impactStockName) {
         // 주식 종목: 주가 기준일자와 다른 날짜의 기사는 주가 추측에 도움이 안 되니 아예 제외해요.
@@ -4047,80 +4089,6 @@
     }
   }
 
-  // ===============================
-  // 정치·경제 카테고리 전용: 대표 언론사별 필터
-  // (다른 카테고리 화면/로직에는 영향을 주지 않아요)
-  // ===============================
-  const OUTLET_FILTER_CATEGORIES = ["정치", "경제"];
-
-  // 언론사 필터 버튼으로 보여줄 대표 언론사 (아래 도메인 표에 있는 이름이어야 해요)
-  const MAJOR_PRESS_OUTLETS = ["연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문"];
-
-  // 네이버 API는 언론사 이름을 주지 않아서, 기사 원문 주소(URL)의 도메인으로 언론사를 알아내요.
-  // 표에 없는 도메인은 "언론사 모름"으로 처리돼요. (새 언론사는 여기에 한 줄씩 추가하면 돼요)
-  const OUTLET_DOMAIN_MAP = {
-    "yna.co.kr": "연합뉴스",
-    "yonhapnewstv.co.kr": "연합뉴스TV",
-    "chosun.com": "조선일보",
-    "biz.chosun.com": "조선비즈",
-    "sports.chosun.com": "스포츠조선",
-    "joongang.co.kr": "중앙일보",
-    "donga.com": "동아일보",
-    "sports.donga.com": "스포츠동아",
-    "hani.co.kr": "한겨레",
-    "khan.co.kr": "경향신문",
-    "kmib.co.kr": "국민일보",
-    "hankookilbo.com": "한국일보",
-    "munhwa.com": "문화일보",
-    "segye.com": "세계일보",
-    "seoul.co.kr": "서울신문",
-    "mk.co.kr": "매일경제",
-    "hankyung.com": "한국경제",
-    "sedaily.com": "서울경제",
-    "edaily.co.kr": "이데일리",
-    "mt.co.kr": "머니투데이",
-    "fnnews.com": "파이낸셜뉴스",
-    "asiae.co.kr": "아시아경제",
-    "heraldcorp.com": "헤럴드경제",
-    "news1.kr": "뉴스1",
-    "newsis.com": "뉴시스",
-    "nocutnews.co.kr": "노컷뉴스",
-    "ohmynews.com": "오마이뉴스",
-    "pressian.com": "프레시안",
-    "dailian.co.kr": "데일리안",
-    "newdaily.co.kr": "뉴데일리",
-    "ajunews.com": "아주경제",
-    "sisajournal.com": "시사저널",
-    "kbs.co.kr": "KBS",
-    "imbc.com": "MBC",
-    "sbs.co.kr": "SBS",
-    "ytn.co.kr": "YTN",
-    "jtbc.co.kr": "JTBC",
-    "mbn.co.kr": "MBN",
-    "tvchosun.com": "TV조선",
-    "ichannela.com": "채널A",
-    "etnews.com": "전자신문",
-    "zdnet.co.kr": "ZDNet Korea",
-    "dt.co.kr": "디지털타임스",
-    "sportsseoul.com": "스포츠서울",
-    "osen.co.kr": "OSEN",
-    "starnewskorea.com": "스타뉴스",
-    "xportsnews.com": "엑스포츠뉴스",
-  };
-
-  function extractDomain(url) {
-    try {
-      return new URL(url).hostname.replace(/^www\./, "");
-    } catch (error) {
-      return "";
-    }
-  }
-
-  // 원문 주소의 도메인으로 언론사 이름을 찾아요. (모르는 도메인이면 null)
-  // "sports.chosun.com"이면 먼저 "sports.chosun.com"을, 없으면 "chosun.com"을 찾는 식으로
-  // 더 구체적인 도메인부터 확인해서 계열 매체(조선비즈 등)가 본지로 섞이지 않게 해요.
-  function matchOutlet(item) {
-    const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
     const domain = extractDomain(url);
     if (!domain) return null;
 
@@ -4665,4 +4633,3 @@
 
 </body>
 </html>
-
