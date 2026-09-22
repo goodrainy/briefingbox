@@ -4089,6 +4089,81 @@
     }
   }
 
+    // ===============================
+  // 정치·경제 카테고리 전용: 대표 언론사별 필터
+  // (다른 카테고리 화면/로직에는 영향을 주지 않아요)
+  // ===============================
+  const OUTLET_FILTER_CATEGORIES = ["정치", "경제"];
+
+  // 언론사 필터 버튼으로 보여줄 대표 언론사 (아래 도메인 표에 있는 이름이어야 해요)
+  const MAJOR_PRESS_OUTLETS = ["연합뉴스", "조선일보", "중앙일보", "동아일보", "한겨레", "경향신문"];
+
+  // 네이버 API는 언론사 이름을 주지 않아서, 기사 원문 주소(URL)의 도메인으로 언론사를 알아내요.
+  // 표에 없는 도메인은 "언론사 모름"으로 처리돼요. (새 언론사는 여기에 한 줄씩 추가하면 돼요)
+  const OUTLET_DOMAIN_MAP = {
+    "yna.co.kr": "연합뉴스",
+    "yonhapnewstv.co.kr": "연합뉴스TV",
+    "chosun.com": "조선일보",
+    "biz.chosun.com": "조선비즈",
+    "sports.chosun.com": "스포츠조선",
+    "joongang.co.kr": "중앙일보",
+    "donga.com": "동아일보",
+    "sports.donga.com": "스포츠동아",
+    "hani.co.kr": "한겨레",
+    "khan.co.kr": "경향신문",
+    "kmib.co.kr": "국민일보",
+    "hankookilbo.com": "한국일보",
+    "munhwa.com": "문화일보",
+    "segye.com": "세계일보",
+    "seoul.co.kr": "서울신문",
+    "mk.co.kr": "매일경제",
+    "hankyung.com": "한국경제",
+    "sedaily.com": "서울경제",
+    "edaily.co.kr": "이데일리",
+    "mt.co.kr": "머니투데이",
+    "fnnews.com": "파이낸셜뉴스",
+    "asiae.co.kr": "아시아경제",
+    "heraldcorp.com": "헤럴드경제",
+    "news1.kr": "뉴스1",
+    "newsis.com": "뉴시스",
+    "nocutnews.co.kr": "노컷뉴스",
+    "ohmynews.com": "오마이뉴스",
+    "pressian.com": "프레시안",
+    "dailian.co.kr": "데일리안",
+    "newdaily.co.kr": "뉴데일리",
+    "ajunews.com": "아주경제",
+    "sisajournal.com": "시사저널",
+    "kbs.co.kr": "KBS",
+    "imbc.com": "MBC",
+    "sbs.co.kr": "SBS",
+    "ytn.co.kr": "YTN",
+    "jtbc.co.kr": "JTBC",
+    "mbn.co.kr": "MBN",
+    "tvchosun.com": "TV조선",
+    "ichannela.com": "채널A",
+    "etnews.com": "전자신문",
+    "zdnet.co.kr": "ZDNet Korea",
+    "dt.co.kr": "디지털타임스",
+    "sportsseoul.com": "스포츠서울",
+    "osen.co.kr": "OSEN",
+    "starnewskorea.com": "스타뉴스",
+    "xportsnews.com": "엑스포츠뉴스",
+  };
+
+  function extractDomain(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch (error) {
+      return "";
+    }
+  }
+
+  // 원문 주소의 도메인으로 언론사 이름을 찾아요. (모르는 도메인이면 null)
+  // "sports.chosun.com"이면 먼저 "sports.chosun.com"을, 없으면 "chosun.com"을 찾는 식으로
+  // 더 구체적인 도메인부터 확인해서 계열 매체(조선비즈 등)가 본지로 섞이지 않게 해요.
+  function matchOutlet(item) {
+    const url = item.originallink && item.originallink.length > 0 ? item.originallink : item.link;
+    
     const domain = extractDomain(url);
     if (!domain) return null;
 
