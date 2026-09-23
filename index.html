@@ -4417,10 +4417,11 @@
 
   // 백업 데이터를 사람이 보기 좋은 리포트 페이지(.html)로 만들어요.
   // 이 페이지 안에는 눈에 보이는 요약 화면과 함께, 그대로 복원할 수 있는 원본 JSON도 숨겨서 담아둬요.
-  function buildBackupReportHtml(data) {
+  function buildBackupReportHtml(data, dayChanges = {}) {
     const bookmarks = data[BOOKMARK_KEY] || [];
     const stocks = data[STOCK_KEY] || [];
     const terms = data[TERM_KEY] || [];
+    const impacts = data[IMPACT_KEY] || {};
     const generatedAt = new Date().toLocaleString("ko-KR");
 
     const bookmarksHtml = bookmarks.length
@@ -4439,7 +4440,53 @@
       ? `<div class="chips">${stocks.map((s) => `<span class="chip">${escapeHtml(s)}</span>`).join("")}</div>`
       : `<p class="empty">등록한 종목이 없어요.</p>`;
 
+    // 종목별로 +/-를 표시한 기사 목록. 그날 종가가 이미 브라우저에 캐시돼 있으면 결과도 같이 보여줘요.
+    const impactSections = Object.keys(impacts)
+      .map((stockName) => {
+        const rows = Object.entries(impacts[stockName] || {})
+          .map(([url, raw]) => ({ url, ...normalizeImpact(raw) }))
+          .filter((entry) => entry.v === "up" || entry.v === "down")
+          .sort((a, b) => b.d.localeCompare(a.d));
+
+        if (rows.length === 0) return "";
+
+        const rowsHtml = rows
+          .map((entry) => {
+            const markLabel = entry.v === "up" ? "+ 긍정" : "− 부정";
+            const dateLabel = entry.d ? formatBaseDateLabel(entry.d) : "날짜 없음";
+            const cached = dayChanges[stockName] && dayChanges[stockName][entry.d];
+            const resultLabel =
+              cached && cached.changeRate !== undefined
+                ? ` → ${formatBaseDateLabel(cached.baseDate)} 종가 ${Number(cached.changeRate) > 0 ? "▲" : Number(cached.changeRate) < 0 ? "▼" : "-"} ${cached.changeRate}% (${VERDICT_LABELS[judgeImpact(entry.v, cached.changeRate)] || ""})`
+                : " → 종가 확인 전";
+            return `<div class="source-item"><span class="tag">${markLabel}</span> ${escapeHtml(dateLabel)} · <a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.t || entry.url)}</a>${escapeHtml(resultLabel)}</div>`;
+          })
+          .join("");
+
+        return `
+      <div class="item">
+        <div class="term-head"><strong>${escapeHtml(stockName)}</strong></div>
+        <div class="sources">${rowsHtml}</div>
+      </div>`;
+      })
+      .filter(Boolean);
+
+    const totalImpactMarks = impactSections.length
+      ? Object.values(impacts).reduce(
+          (sum, perStock) =>
+            sum +
+            Object.values(perStock || {}).filter((raw) => {
+              const v = normalizeImpact(raw);
+              return v && (v.v === "up" || v.v === "down");
+            }).length,
+          0
+        )
+      : 0;
+
+    const impactsHtml = impactSections.length ? impactSections.join("") : `<p class="empty">표시해둔 예측이 없어요.</p>`;
+
     const termsHtml = terms.length
+      
       ? terms
           .map((t) => {
             const label = (t.meaningSource && t.meaningSource.label) || "";
@@ -4502,6 +4549,9 @@
   <h2>📊 관심 종목 (${stocks.length})</h2>
   ${stocksHtml}
 
+  <h2>📈 내가 표시한 예측 (${totalImpactMarks})</h2>
+  ${impactsHtml}
+
   <h2>📖 내 용어사전 (${terms.length})</h2>
   ${termsHtml}
 
@@ -4528,7 +4578,7 @@
       return;
     }
 
-    const html = buildBackupReportHtml(data);
+    const html = buildBackupReportHtml(data, getDayChangeCache());
     const blob = new Blob([html], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
