@@ -537,14 +537,14 @@
   }
 
   .impact-btn {
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--color-border);
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--color-primary);
     border-radius: 50%;
-    background: var(--color-card-bg);
-    color: var(--color-text-light);
+    background: #eaf1ff;
+    color: var(--color-primary-dark);
     font-family: inherit;
-    font-size: 1.05rem;
+    font-size: 1.3rem;
     font-weight: 800;
     line-height: 1;
     cursor: pointer;
@@ -858,6 +858,9 @@
   .impact-summary {
     display: flex;
     gap: 6px;
+    margin-left: auto;
+    padding-left: 10px;
+    border-left: 1px solid var(--color-border);
   }
 
   /* display:flex가 hidden 속성을 이겨버리지 않도록 확실히 숨김 */
@@ -1534,14 +1537,13 @@
       gap: 5px;
     }
 
-    .keyword-chip {
-      max-width: 100%;
-      padding: 2px 8px;
-      font-size: 0.72rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+  .keyword-chip {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    background: none;
+    padding: 0;
+  }
 
     .pub-time {
       order: 2; /* 키워드 다음 줄로 내려요 */
