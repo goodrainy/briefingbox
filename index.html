@@ -247,12 +247,6 @@
     margin-bottom: 14px;
   }
 
-  .feature-icon {
-    width: 34px;
-    height: 34px;
-    color: var(--color-primary);
-  }
-
   .feature-card h3 {
     font-size: 1.05rem;
     margin-bottom: 10px;
@@ -1665,23 +1659,19 @@
       <p class="hero-sub-note">회원가입 없이, 지금 바로 체험해볼 수 있어요.</p>
     </div>
 
-    <!-- 실제 뉴스 요약 카드 화면을 흉내낸 미리보기 (추상 도형 대신 실제 UI 색·구성을 그대로 사용) -->
+    <!-- 간단한 SVG 일러스트: 뉴스 카드가 쌓여있는 느낌을 도형으로 표현 -->
     <div class="hero-illustration">
       <svg viewBox="0 0 380 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="30" y="40" width="320" height="240" rx="20" fill="#ffffff" stroke="#e5e9f0" stroke-width="2"/>
-        <rect x="55" y="64" width="70" height="22" rx="11" fill="#fff3cd"/>
-        <text x="90" y="79" font-size="11" text-anchor="middle" fill="#92720a" font-family="sans-serif" font-weight="700">뉴스 요약</text>
-        <rect x="55" y="100" width="240" height="16" rx="4" fill="#1b1f27"/>
-        <circle cx="60" cy="145" r="14" fill="#eaf1ff"/>
-        <rect x="82" y="137" width="200" height="10" rx="5" fill="#1b1f27" opacity="0.85"/>
-        <rect x="82" y="155" width="150" height="8" rx="4" fill="#6b7280"/>
-        <rect x="82" y="171" width="46" height="16" rx="8" fill="#eaf1ff"/>
-        <rect x="134" y="171" width="52" height="16" rx="8" fill="#fff3cd"/>
-        <circle cx="60" cy="205" r="14" fill="#eaf1ff"/>
-        <rect x="82" y="197" width="180" height="10" rx="5" fill="#1b1f27" opacity="0.85"/>
-        <rect x="82" y="215" width="130" height="8" rx="4" fill="#6b7280"/>
-        <rect x="240" y="238" width="80" height="26" rx="13" fill="#2f6fed"/>
-        <text x="280" y="255" font-size="11" text-anchor="middle" fill="#fff" font-family="sans-serif" font-weight="700">관심있어요</text>
+        <rect x="40" y="60" width="260" height="180" rx="18" fill="#eaf1ff"/>
+        <rect x="70" y="30" width="260" height="180" rx="18" fill="#ffffff" stroke="#e5e9f0" stroke-width="2"/>
+        <rect x="95" y="60" width="140" height="14" rx="7" fill="#2f6fed"/>
+        <rect x="95" y="90" width="200" height="10" rx="5" fill="#dbe4f3"/>
+        <rect x="95" y="110" width="200" height="10" rx="5" fill="#dbe4f3"/>
+        <rect x="95" y="130" width="130" height="10" rx="5" fill="#dbe4f3"/>
+        <circle cx="270" cy="150" r="26" fill="#ffb703"/>
+        <text x="270" y="157" font-size="20" text-anchor="middle" fill="#fff" font-family="sans-serif">✓</text>
+        <rect x="95" y="165" width="200" height="1" stroke="#e5e9f0"/>
+        <rect x="95" y="180" width="150" height="10" rx="5" fill="#dbe4f3"/>
       </svg>
     </div>
   </section>
@@ -1691,23 +1681,17 @@
     <h2>뉴스한입이 하는 일, 딱 3가지</h2>
     <div class="feature-grid">
       <div class="feature-card">
-        <div class="icon">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 9v6l-4 2v-8L3 4z"/></svg>
-        </div>
+        <div class="icon">📌</div>
         <h3>관심 카테고리 선택</h3>
         <p>정치, 경제, IT, 문화 등 궁금한 분야만 골라서 볼 수 있어요.</p>
       </div>
       <div class="feature-card">
-        <div class="icon">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        </div>
+        <div class="icon">⏱️</div>
         <h3>한입 크기 요약</h3>
         <p>긴 기사 대신, 핵심만 담은 짧은 요약으로 빠르게 확인해요.</p>
       </div>
       <div class="feature-card">
-        <div class="icon">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
-        </div>
+        <div class="icon">🔗</div>
         <h3>원문 바로가기</h3>
         <p>궁금한 소식은 요약 한 줄을 눌러 원문 기사에서 자세히 볼 수 있어요.</p>
       </div>
