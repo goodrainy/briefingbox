@@ -1873,6 +1873,7 @@
     newsModeEl.hidden = mode !== "news";
     stockModeEl.hidden = mode !== "stock";
     dictModeEl.hidden = mode !== "dict";
+    window.scrollTo(0, 0);
 
     // 용어사전 화면을 열 때마다 최신 저장 내용으로 다시 그려요.
     if (mode === "dict") {
