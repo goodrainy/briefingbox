@@ -825,6 +825,17 @@
     color: var(--color-text-light);
   }
 
+    .stock-predict-hint {
+    display: inline-block;
+    margin: 4px 0 14px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eaf1ff;
+    color: var(--color-primary-dark);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
   /* "관련 뉴스 보기" 버튼 + 내가 표시한 긍정/부정 개수를 한 줄에 나란히 놓아요 */
   .stock-card-actions {
     display: flex;
@@ -2659,6 +2670,11 @@
     top.appendChild(nameGroup);
     top.appendChild(removeBtn);
 
+    // 오늘 종가를 맞혀보는 컨셉이라는 걸 먼저 알려줘요. (예: "9월 23일 종가는 어떻게 될까요?")
+    const predictHint = document.createElement("p");
+    predictHint.className = "stock-predict-hint";
+    predictHint.textContent = `📅 ${formatBaseDateLabel(toDateStr(new Date()))} 종가는 어떻게 될까요? 관련 뉴스를 보고 예측해보세요!`;
+
     // 관련 뉴스 보기 버튼: 기존 "더 보기"와 같은 방식으로 실제 뉴스를 검색해서 보여줘요.
     const newsBtn = document.createElement("button");
     newsBtn.type = "button";
@@ -2724,6 +2740,7 @@
     actions.appendChild(impactSummaryEl);
 
     card.appendChild(top);
+    card.appendChild(predictHint);
     card.appendChild(actions);
     card.appendChild(reviewPanel);
     card.appendChild(relatedPanel);
